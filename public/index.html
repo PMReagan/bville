@@ -324,6 +324,15 @@ h1 .flame{width:.8em;height:.95em;flex:none;filter:drop-shadow(0 0 10px rgba(255
   .toast{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:translate(-50%,30px) scale(.8);opacity:0}to{transform:translate(-50%,0) scale(1);opacity:1}}
 }
 
+/* ===== Welcome purse ===== */
+.coin{line-height:1;padding-top:1px}
+#welcome{align-items:center;justify-content:center;padding:16px}
+.welcomecard{height:auto;max-height:92vh;border-radius:18px;border:1px solid rgba(255,180,60,.45);box-shadow:0 0 60px rgba(255,150,40,.25)}
+.purse{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,rgba(255,180,60,.18),rgba(255,180,60,.04));border:1px solid rgba(255,180,60,.4);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.purse b{font-family:var(--f-display);font-weight:400;font-size:30px;color:var(--torch)}
+.tips{padding-left:0;list-style:none;display:grid;gap:10px;margin:12px 0 18px}
+.tips li{background:var(--night);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--dust)}.tips b{color:var(--bone)}
+.qq{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--sky);color:var(--sky);font-family:var(--f-display);font-size:12px}
 /* ===== Accounts ===== */
 .hbtns{display:flex;gap:6px}
 #acct.in{color:var(--bone);border-color:var(--jade);max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -445,7 +454,7 @@ footer p{margin:0 0 8px}
   <ol class="steps"><li><b>Pick a ? on the map.</b> Each one is a riddle about a real historic site in Birmingham.</li>
   <li><b>Go find it.</b> Answer a question only someone standing there could answer, or check in.</li>
   <li><b>Dig through the layers.</b> 1969 archive photo, the 2001 survey, then today, which you photograph yourself.</li>
-  <li><b>Earn Marthas.</b> Named for Martha Baldwin. Climb from Newcomer to Living Landmark on the Martha Board.</li>
+  <li><b>Earn Marthas.</b> Named for Martha Baldwin. Every explorer starts with 250. Climb from Newcomer to Living Landmark on the Martha Board.</li>
   <li><b>Stop the Syndicate.</b> Once five explorers join, developers start targeting sites each week, more as the crowd grows. Defend them, or watch a car wash move in.</li></ol>
   <p class="hint">Most sites are private homes. Please enjoy them from the sidewalk.</p></div></div>
 <div class="wrap" id="app">
@@ -516,8 +525,9 @@ const PROG_KEYS = ["found", "answers", "hints", "relics", "uploads", "firsts"];
 const save = (k, v) => { try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) {} if (PROG_KEYS.includes(k)) queueProgress(); };
 let found = load("found", {}), answers = load("answers", {}), hints = load("hints", {}), relics = load("relics", {}), uploads = load("uploads", {}), firsts = load("firsts", {});
 const DIG_MILESTONES = [[5, 100, "Field Photographer"], [10, 200, "Site Recorder"], [25, 500, "Master Excavator"], [78, 1500, "Keeper of Layer 3"]];
+const STARTER = 250; // every explorer starts with a purse, so they can try hints and defenses right away
 function xp(){
-  let x = 0;
+  let x = STARTER;
   for (const id in found) { const s = BY[id]; if (!s) continue; x += 100 + RAR_XP[s.rarity] + (found[id].field ? 50 : 0); }
   for (const k in answers) if (answers[k].ok) x += 25;
   for (const id in hints) x -= 20;
@@ -1061,6 +1071,26 @@ function paintIntroLive(){
   const el = $("#introlive"); if (!el) return; const W = world(), live = W.raids.filter(r => r.live);
   el.lastElementChild.textContent = live.length ? `${live.length} site${live.length > 1 ? "s" : ""} under threat · ${left(live[0].due - Date.now())}` : W.awake ? `First raid in ${left(W.firstStart - Date.now())}` : `The Syndicate is watching`;
 }
+/* ---------- Welcome purse ---------- */
+function welcome(){
+  if (load("welcomed", false)) return; save("welcomed", true);
+  const d = document.createElement("div"); d.className = "sheet"; d.id = "welcome";
+  d.innerHTML = `<div class="card authcard welcomecard" role="dialog" aria-modal="true" aria-labelledby="wl-h">
+    <div class="purse"><span class="coin big">M</span><div><div class="hint">Your expedition purse</div><b>${STARTER} Marthas</b></div></div>
+    <h2 id="wl-h">Welcome to bVille, explorer</h2>
+    <p class="story">Marthas are named for Martha Baldwin, whose name is on Baldwin Public Library. Here’s a starter purse to learn the ropes:</p>
+    <ul class="tips">
+      <li><b>Stuck on a riddle?</b> Tap a <span class="qq">?</span> on the map. A hint costs 20 Marthas.</li>
+      <li><b>Find a site</b> and prove you’re there to earn 100 or more.</li>
+      <li><b>Photograph it today</b> for Layer 3 and earn 75 more.</li>
+      <li><b>Bulldozers coming?</b> File a petition for 50 Marthas to help save a threatened site.</li>
+    </ul>
+    <button class="btn go big" id="wl-go" type="button">Let’s go</button></div>`;
+  document.body.appendChild(d); document.body.style.overflow = "hidden";
+  setTimeout(() => burst({ n: 70 }), 250);
+  const close = () => { d.remove(); document.body.style.overflow = ""; };
+  $("#wl-go").onclick = close; d.onclick = e => { if (e.target === d) close(); }; $("#wl-go").focus();
+}
 /* ---------- Landing ---------- */
 (function intro(){
   const pics = ["walk/img/hunter-a1","ride/img/quartonhomestead-a1","downtown/img/stitched-result1shain","walk/img/raynale-a1","ride/img/greenwood-a1","ride/img/wooster-a1","downtown/img/hawthorne-building-361-e-maple","walk/img/chatfield-a1"];
@@ -1070,7 +1100,7 @@ function paintIntroLive(){
   const n = Object.keys(found).length, x = xp();
   if (n) { $("#start").textContent = "Resume the hunt"; $("#introwho").textContent = `${rankOf(x)[0][1]} · ${n} of 78 found · ${x.toLocaleString()} Marthas`; }
   paintIntroLive();
-  const go = () => $("#app").scrollIntoView({ behavior: RM ? "auto" : "smooth" });
+  const go = () => { $("#app").scrollIntoView({ behavior: RM ? "auto" : "smooth" }); setTimeout(welcome, RM ? 0 : 650); };
   $("#start").onclick = go; $(".scroll").onclick = go;
   const openHow = () => { $("#howsheet").hidden = false; document.body.style.overflow = "hidden"; $("#howx").focus(); };
   const closeHow = () => { $("#howsheet").hidden = true; document.body.style.overflow = ""; };
