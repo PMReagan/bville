@@ -413,7 +413,7 @@ footer p{margin:0 0 8px}
     <h2 class="big"><svg class="flame xl" viewBox="0 0 24 28" aria-hidden="true"><path class="f1" d="M12 1c1 5 7 8 7 15a7 7 0 0 1-14 0c0-4 2-6 3-9 1 3 2 4 3 4-1-4 0-7 1-10z" fill="#FF7A3D"/><path class="f2" d="M12 10c.6 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3.5 2-5 .5 1.5 1 2 2 2-.5-2 0-4 0-6z" fill="#FFE3A6"/></svg><span>bVille</span></h2>
     <p class="hook">78 historic sites are hiding in plain sight.<br><em>Find them before the bulldozers do.</em></p>
     <button class="cta" id="start" type="button">Start the hunt</button>
-    <button class="introlink" id="introsign" type="button" data-auth="login">Already exploring? Sign in</button>
+    <button class="introlink" id="introsign" type="button" data-auth>Already exploring? Sign in</button>
     <p class="who" id="introwho"></p>
     <ul class="three"><li><b>Crack</b>the riddle</li><li><b>Dig</b>through time</li><li><b>Defend</b>the town</li></ul>
   </div>
@@ -422,18 +422,23 @@ footer p{margin:0 0 8px}
 <div class="sheet" id="authsheet" hidden><div class="card authcard" role="dialog" aria-modal="true" aria-labelledby="au-h">
   <button class="btn" id="aux" type="button" style="float:right">Close</button>
   <div id="auin">
-    <h2 id="au-h">Join the expedition</h2>
-    <p class="hint" id="au-sub">Save your finds and Marthas on any phone, post photos and compete on the Martha Board.</p>
-    <div class="autabs" role="tablist"><button type="button" role="tab" data-m="signup" aria-selected="true">New explorer</button><button type="button" role="tab" data-m="login" aria-selected="false">I have an account</button></div>
-    <button class="btn google" id="au-google" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.1 14.6 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.6-4.1 9.6-9.8 0-.7-.1-1.2-.2-1.7H12z"/></svg>Continue with Google</button>
+    <h2 id="au-h">Save your expedition</h2>
+    <p class="hint" style="margin-bottom:18px">Keep your Marthas on any phone and join the Martha Board.</p>
     <form id="au-form" novalidate>
-      <label class="fld" id="au-namef"><span>Explorer name <small>(shown on the Martha Board)</small></span><input id="au-name" autocomplete="nickname" maxlength="40" placeholder="e.g. Paul R."></label>
-      <label class="fld"><span>Email <small>(never shown to other players)</small></span><input id="au-email" type="email" autocomplete="email" required></label>
-      <label class="fld" id="au-pwf"><span>Password</span><input id="au-pw" type="password" autocomplete="new-password" minlength="8" required></label>
-      <button class="btn go big" id="au-go" type="submit">Join the expedition</button>
+      <label class="fld"><span>Email</span><input id="au-email" type="email" autocomplete="email" inputmode="email" required></label>
+      <label class="fld"><span>Password</span><input id="au-pw" type="password" autocomplete="current-password" minlength="8" required></label>
+      <button class="btn go big" id="au-go" type="submit">Continue</button>
       <p class="verdict" id="au-msg" aria-live="polite"></p>
       <button class="introlink" id="au-forgot" type="button" hidden>Forgot your password?</button>
     </form>
+    <button class="btn google" id="au-google" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.1 14.6 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.6-4.1 9.6-9.8 0-.7-.1-1.2-.2-1.7H12z"/></svg>Continue with Google</button>
+  </div>
+  <div id="auname" hidden>
+    <h2>One last thing</h2>
+    <p class="hint">What should we call you on the Martha Board? Your email is never shown.</p>
+    <label class="fld"><span>Explorer name</span><input id="au-nm" autocomplete="nickname" maxlength="40" placeholder="e.g. Paul R."></label>
+    <button class="btn go big" id="au-nmgo" type="button">Start exploring</button>
+    <p class="verdict" id="au-msg4" aria-live="polite"></p>
   </div>
   <div id="auout" hidden>
     <h2>Your expedition</h2>
@@ -965,7 +970,7 @@ function subscribeToday(){
   }, () => {});
 }
 function uploadBox(s){
-  if (!myId) return `<div class="box"><h3>Excavate Layer 3</h3><p class="hint">Sign in to add today’s photo of this site and earn Marthas.</p><div class="row2"><button class="btn go" type="button" data-auth="signup">Join the expedition</button><button class="btn" type="button" data-auth="login">Sign in</button></div></div>`;
+  if (!myId) return `<div class="box"><h3>Excavate Layer 3</h3><p class="hint">Sign in to add today’s photo of this site and earn Marthas.</p><div class="row2"><button class="btn go" type="button" data-auth>Sign in or join</button></div></div>`;
   const mine = uploads[s.id];
   return `<div class="box"><h3>Excavate Layer 3</h3>
     <p class="hint">Photograph the site as it stands today, from the sidewalk. Please keep people and license plates out of the frame.${mine ? "" : ` Your first post here earns 75 Marthas${todayDocs.length ? "" : ", plus 150 more for being the first explorer to excavate this site"}.`}</p>
@@ -1034,7 +1039,7 @@ function subscribeBoard(){
 async function drawBoard(){
   const me = $("#me"), ol = $("#board"), x = xp(), [r] = rankOf(x);
   me.innerHTML = `<div class="hint">You</div><div class="board-me" style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><b style="font-family:var(--f-label);font-size:20px">${esc(r[1])} · ${Object.keys(found).length} found · ${Object.keys(uploads).length} excavated · ${Object.keys(relics).length} relics</b><span class="m" style="font-family:var(--f-label);font-weight:700;font-size:22px"><span class="coin">M</span> ${x.toLocaleString()}</span></div>` +
-    (!myId ? `<p class="hint" style="margin-top:6px">Sign in to put your score on the board and keep it safe on any phone.</p><div class="row2"><button class="btn go" type="button" data-auth="signup">Join the expedition</button><button class="btn" type="button" data-auth="login">Sign in</button></div>` : !canWrite ? `<p class="hint" style="margin-top:6px">You can watch the board. Ask the expedition’s owner for contributor access to compete.</p>` : "");
+    (!myId ? `<p class="hint" style="margin-top:6px">Sign in to put your score on the board and keep it safe on any phone.</p><div class="row2"><button class="btn go" type="button" data-auth>Sign in or join</button></div>` : !canWrite ? `<p class="hint" style="margin-top:6px">You can watch the board. Ask the expedition’s owner for contributor access to compete.</p>` : "");
   if (!db) { ol.innerHTML = ""; return; }
   subscribeBoard();
   if (!boardRows.length) { ol.innerHTML = `<li><span class="pos">—</span><span class="who"><b>No explorers on the board yet</b><span>Discover a site to post the first score.</span></span><span></span></li>`; return; }
@@ -1051,7 +1056,7 @@ function unsubReports(){ if (unsub) { unsub(); unsub = null; } rdocs = []; }
 function subscribeReports(){ unsubReports(); if (!db || !cur) return; unsub = db.collection("reports").where("stop", "==", cur.id).orderBy("at", "desc").limit(50).onSnapshot(sn => { rdocs = sn.docs.map(d => d.data()); paintReports(); }, () => {}); }
 function renderReportUI(){
   const b = $("#reportUI"); if (!b) return;
-  if (!myId) { b.innerHTML = `<p class="hint">Sign in to add a field report.</p><div class="row2"><button class="btn" type="button" data-auth="login">Sign in</button></div>`; return; }
+  if (!myId) { b.innerHTML = `<p class="hint">Sign in to add a field report.</p><div class="row2"><button class="btn" type="button" data-auth>Sign in or join</button></div>`; return; }
   if (!canWrite) { b.innerHTML = `<p class="hint">You can read reports. Ask the expedition’s owner for contributor access to add one.</p>`; return; }
   b.innerHTML = `<label for="rt" class="hint">Your report</label><textarea id="rt" maxlength="600" placeholder="e.g. The scalloped shingles are still there, but the porch has been rebuilt."></textarea><div class="row2"><button class="btn go" id="rs" type="button">Add report</button><span class="verdict" id="rm" aria-live="polite"></span></div>`;
   $("#rs").onclick = async () => { const t = $("#rt").value.trim(); if (!t) { $("#rm").textContent = "Write something first."; return; } $("#rs").disabled = true;
@@ -1108,20 +1113,13 @@ function welcome(){
 })();
 
 /* ---------- Accounts (Netlify Identity) and saved progress ---------- */
-let authMode = "signup", progT = null, progReady = false;
-function setAuthMode(m){
-  authMode = m; const up = m === "signup";
-  document.querySelectorAll(".autabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.m === m));
-  $("#au-h").textContent = up ? "Join the expedition" : "Welcome back, explorer";
-  $("#au-sub").textContent = up ? "Save your finds and Marthas on any phone, post photos and compete on the Martha Board." : "Sign in to pick up where you left off.";
-  $("#au-namef").hidden = !up; $("#au-go").textContent = up ? "Join the expedition" : "Sign in"; $("#au-forgot").hidden = up;
-  $("#au-pw").autocomplete = up ? "new-password" : "current-password"; $("#au-msg").textContent = "";
-}
-function openAuth(m){
-  $("#auin").hidden = !!myId; $("#auout").hidden = !myId; $("#aureset").hidden = true;
-  if (!myId) setAuthMode(m || "signup"); else { $("#au-who").textContent = window.bvMe?.email || window.bvMe?.name || ""; $("#au-rename").value = window.bvMe?.name || ""; $("#au-msg2").textContent = ""; }
+let progT = null, progReady = false;
+function showPane(id){ ["auin", "auout", "aureset", "auname"].forEach(p => $("#" + p).hidden = p !== id); }
+function openAuth(){
+  if (myId) { showPane("auout"); $("#au-who").textContent = window.bvMe?.email || window.bvMe?.name || ""; $("#au-rename").value = window.bvMe?.name || ""; $("#au-msg2").textContent = ""; }
+  else { showPane("auin"); $("#au-msg").textContent = ""; $("#au-forgot").hidden = true; }
   $("#authsheet").hidden = false; document.body.style.overflow = "hidden";
-  setTimeout(() => (myId ? $("#au-rename") : (authMode === "signup" ? $("#au-name") : $("#au-email"))).focus(), 50);
+  setTimeout(() => (myId ? $("#au-rename") : $("#au-email")).focus(), 50);
 }
 function closeAuth(){ $("#authsheet").hidden = true; document.body.style.overflow = $("#sheet").hidden ? "" : "hidden"; }
 function authErr(e){
@@ -1133,8 +1131,13 @@ function authErr(e){
   if (st === 404 || m.includes("identity")) return "Sign-in isn’t switched on for this site yet.";
   return "Something went wrong. Check your connection and try again.";
 }
-document.addEventListener("click", e => { const t = e.target.closest?.("[data-auth]"); if (t) { e.preventDefault(); openAuth(t.dataset.auth); } });
+document.addEventListener("click", e => { const t = e.target.closest?.("[data-auth]"); if (t) { e.preventDefault(); openAuth(); } });
 function paintAcct(){ const b = $("#acct"); if (!b) return; b.textContent = myId ? (window.bvMe?.name || "Explorer") : "Sign in"; b.classList.toggle("in", !!myId); const s = $("#introsign"); if (s) s.hidden = !!myId; }
+async function afterLogin(u, isNew){
+  await signedIn(u);
+  if (!u?.name) { showPane("auname"); $("#authsheet").hidden = false; setTimeout(() => $("#au-nm").focus(), 50); }
+  else { closeAuth(); toast("Welcome back, " + (window.bvMe?.name || "explorer") + "!"); }
+}
 async function signedIn(u){
   let me = null; try { me = (await bvDB.api("me")).user; } catch (e) {}
   if (!me) { myId = null; paintAcct(); return; }
@@ -1171,29 +1174,36 @@ function queueProgress(now){
 }
 addEventListener("pagehide", () => { if (myId && progReady && progT) { clearTimeout(progT); try { const m = /(?:^|; )nf_jwt=([^;]*)/.exec(document.cookie); fetch("/api/me/progress", { method: "PUT", keepalive: true, headers: { "content-type": "application/json", ...(m ? { Authorization: "Bearer " + decodeURIComponent(m[1]) } : {}) }, body: JSON.stringify({ found, answers, hints, relics, uploads, firsts }) }); } catch (e) {} } });
 (async function bootAuth(){
-  $("#acct").onclick = () => openAuth("login"); $("#aux").onclick = closeAuth;
+  $("#acct").onclick = () => openAuth(); $("#aux").onclick = closeAuth;
   $("#authsheet").onclick = e => { if (e.target.id === "authsheet") closeAuth(); };
-  document.querySelectorAll(".autabs button").forEach(b => b.onclick = () => setAuthMode(b.dataset.m));
   paintAcct();
   if (!window.NI) return;
   try { const st = await NI.getSettings(); if (st?.providers?.google) { const g = $("#au-google"); g.hidden = false; g.onclick = () => NI.oauthLogin("google"); } } catch (e) {}
+  // One button: sign in if the account exists, otherwise create it.
   $("#au-form").onsubmit = async e => {
-    e.preventDefault(); const em = $("#au-email").value.trim(), pw = $("#au-pw").value, nm = $("#au-name").value.trim(), msg = $("#au-msg"); msg.className = "verdict";
+    e.preventDefault(); const em = $("#au-email").value.trim(), pw = $("#au-pw").value, msg = $("#au-msg"); msg.className = "verdict";
     if (!/^\S+@\S+\.\S+$/.test(em)) { msg.textContent = "Enter your email address."; return; }
-    if (pw.length < 8) { msg.textContent = "Use a password with at least 8 characters."; return; }
-    if (authMode === "signup" && nm.length < 2) { msg.textContent = "Pick an explorer name."; return; }
-    $("#au-go").disabled = true; msg.textContent = authMode === "signup" ? "Creating your account…" : "Signing in…";
-    try {
-      if (authMode === "signup") {
-        const u = await NI.signup(em, pw, { full_name: nm });
-        let cur = null; try { cur = await NI.getUser(); } catch (x) {}
-        if (!cur) { try { cur = await NI.login(em, pw); } catch (x) {} }
-        if (cur) { closeAuth(); await signedIn(cur); celebrate("Welcome, " + nm + "!", "Your expedition is saved"); }
-        else { msg.className = "verdict ok"; msg.textContent = "Almost there! We sent a confirmation link to " + em + ". Open it on this phone to finish."; }
-      } else { const u = await NI.login(em, pw); closeAuth(); await signedIn(u); toast("Welcome back, " + (window.bvMe?.name || "explorer") + "!"); }
-    } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); }
+    if (pw.length < 8) { msg.textContent = "Passwords need at least 8 characters."; return; }
+    $("#au-go").disabled = true; msg.textContent = "One moment…";
+    try { const u = await NI.login(em, pw); await afterLogin(u, false); }
+    catch (x1) {
+      const m1 = String(x1?.message || "").toLowerCase();
+      if (m1.includes("confirm")) { msg.className = "verdict err"; msg.textContent = "Check your inbox for the confirmation link we sent, then come back."; $("#au-go").disabled = false; return; }
+      try {
+        await NI.signup(em, pw, {});
+        let u = null; try { u = await NI.getUser(); } catch (x) {} if (!u) { try { u = await NI.login(em, pw); } catch (x) {} }
+        if (u) await afterLogin(u, true);
+        else { msg.className = "verdict ok"; msg.textContent = "Almost there! We emailed a link to " + em + ". Tap it to finish."; }
+      } catch (x2) {
+        const m2 = String(x2?.message || "").toLowerCase();
+        msg.className = "verdict err";
+        if (m2.includes("already") || m2.includes("registered") || m2.includes("exists")) { msg.textContent = "Wrong password for that email."; $("#au-forgot").hidden = false; }
+        else msg.textContent = authErr(x2);
+      }
+    }
     $("#au-go").disabled = false;
   };
+  $("#au-nmgo").onclick = async () => { const nm = $("#au-nm").value.trim(), msg = $("#au-msg4"); if (nm.length < 2) { msg.textContent = "Pick a name with at least 2 letters."; return; } $("#au-nmgo").disabled = true; try { await NI.updateUser({ data: { full_name: nm } }); await NI.refreshSession?.(); const me = (await bvDB.api("me")).user; if (me) window.bvMe = { ...window.bvMe, ...me }; paintAcct(); closeAuth(); celebrate("Welcome, " + nm + "!", "Your expedition is saved"); } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } $("#au-nmgo").disabled = false; };
   $("#au-forgot").onclick = async () => { const em = $("#au-email").value.trim(), msg = $("#au-msg"); if (!/^\S+@\S+\.\S+$/.test(em)) { msg.textContent = "Type your email above first."; return; } try { await NI.requestPasswordRecovery(em); msg.className = "verdict ok"; msg.textContent = "Check your email for a link to reset your password."; } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } };
   $("#au-out").onclick = async () => { clearTimeout(progT); if (progReady) { try { await bvDB.api("me/progress", { method: "PUT", json: { found, answers, hints, relics, uploads, firsts } }); } catch (e) {} } try { await NI.logout(); } catch (e) {} PROG_KEYS.forEach(k => { try { localStorage.removeItem(KEY + k); } catch (e) {} }); location.reload(); };
   $("#au-savename").onclick = async () => { const nm = $("#au-rename").value.trim(), msg = $("#au-msg2"); if (nm.length < 2) { msg.textContent = "Pick a name with at least 2 letters."; return; } try { await NI.updateUser({ data: { full_name: nm } }); await NI.refreshSession?.(); const me = (await bvDB.api("me")).user; if (me) window.bvMe = { ...window.bvMe, ...me }; paintAcct(); msg.className = "verdict ok"; msg.textContent = "Saved. The board updates within a minute."; } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } };
@@ -1201,9 +1211,9 @@ addEventListener("pagehide", () => { if (myId && progReady && progT) { clearTime
   let cb = null; try { cb = await NI.handleAuthCallback(); } catch (e) { toast("That link has expired. Try again."); }
   let u = cb?.user || null; if (!u) { try { u = await NI.getUser(); } catch (e) {} }
   if (u) await signedIn(u);
-  if (cb?.type === "confirmation") celebrate("Welcome aboard!", "Your expedition is saved");
+  if (cb?.type === "confirmation" && u) { if (!u.name) { showPane("auname"); $("#authsheet").hidden = false; } else celebrate("Welcome aboard!", "Your expedition is saved"); }
   if (cb?.type === "oauth" && u) toast("Signed in as " + (window.bvMe?.name || "explorer"));
-  if (cb?.type === "recovery") { $("#auin").hidden = true; $("#auout").hidden = true; $("#aureset").hidden = false; $("#authsheet").hidden = false; }
+  if (cb?.type === "recovery") { showPane("aureset"); $("#authsheet").hidden = false; }
 })();
 </script>
 

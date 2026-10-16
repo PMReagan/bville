@@ -1,19 +1,12 @@
 
 /* ---------- Accounts (Netlify Identity) and saved progress ---------- */
-let authMode = "signup", progT = null, progReady = false;
-function setAuthMode(m){
-  authMode = m; const up = m === "signup";
-  document.querySelectorAll(".autabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.m === m));
-  $("#au-h").textContent = up ? "Join the expedition" : "Welcome back, explorer";
-  $("#au-sub").textContent = up ? "Save your finds and Marthas on any phone, post photos and compete on the Martha Board." : "Sign in to pick up where you left off.";
-  $("#au-namef").hidden = !up; $("#au-go").textContent = up ? "Join the expedition" : "Sign in"; $("#au-forgot").hidden = up;
-  $("#au-pw").autocomplete = up ? "new-password" : "current-password"; $("#au-msg").textContent = "";
-}
-function openAuth(m){
-  $("#auin").hidden = !!myId; $("#auout").hidden = !myId; $("#aureset").hidden = true;
-  if (!myId) setAuthMode(m || "signup"); else { $("#au-who").textContent = window.bvMe?.email || window.bvMe?.name || ""; $("#au-rename").value = window.bvMe?.name || ""; $("#au-msg2").textContent = ""; }
+let progT = null, progReady = false;
+function showPane(id){ ["auin", "auout", "aureset", "auname"].forEach(p => $("#" + p).hidden = p !== id); }
+function openAuth(){
+  if (myId) { showPane("auout"); $("#au-who").textContent = window.bvMe?.email || window.bvMe?.name || ""; $("#au-rename").value = window.bvMe?.name || ""; $("#au-msg2").textContent = ""; }
+  else { showPane("auin"); $("#au-msg").textContent = ""; $("#au-forgot").hidden = true; }
   $("#authsheet").hidden = false; document.body.style.overflow = "hidden";
-  setTimeout(() => (myId ? $("#au-rename") : (authMode === "signup" ? $("#au-name") : $("#au-email"))).focus(), 50);
+  setTimeout(() => (myId ? $("#au-rename") : $("#au-email")).focus(), 50);
 }
 function closeAuth(){ $("#authsheet").hidden = true; document.body.style.overflow = $("#sheet").hidden ? "" : "hidden"; }
 function authErr(e){
@@ -25,8 +18,13 @@ function authErr(e){
   if (st === 404 || m.includes("identity")) return "Sign-in isn’t switched on for this site yet.";
   return "Something went wrong. Check your connection and try again.";
 }
-document.addEventListener("click", e => { const t = e.target.closest?.("[data-auth]"); if (t) { e.preventDefault(); openAuth(t.dataset.auth); } });
+document.addEventListener("click", e => { const t = e.target.closest?.("[data-auth]"); if (t) { e.preventDefault(); openAuth(); } });
 function paintAcct(){ const b = $("#acct"); if (!b) return; b.textContent = myId ? (window.bvMe?.name || "Explorer") : "Sign in"; b.classList.toggle("in", !!myId); const s = $("#introsign"); if (s) s.hidden = !!myId; }
+async function afterLogin(u, isNew){
+  await signedIn(u);
+  if (!u?.name) { showPane("auname"); $("#authsheet").hidden = false; setTimeout(() => $("#au-nm").focus(), 50); }
+  else { closeAuth(); toast("Welcome back, " + (window.bvMe?.name || "explorer") + "!"); }
+}
 async function signedIn(u){
   let me = null; try { me = (await bvDB.api("me")).user; } catch (e) {}
   if (!me) { myId = null; paintAcct(); return; }
@@ -63,29 +61,36 @@ function queueProgress(now){
 }
 addEventListener("pagehide", () => { if (myId && progReady && progT) { clearTimeout(progT); try { const m = /(?:^|; )nf_jwt=([^;]*)/.exec(document.cookie); fetch("/api/me/progress", { method: "PUT", keepalive: true, headers: { "content-type": "application/json", ...(m ? { Authorization: "Bearer " + decodeURIComponent(m[1]) } : {}) }, body: JSON.stringify({ found, answers, hints, relics, uploads, firsts }) }); } catch (e) {} } });
 (async function bootAuth(){
-  $("#acct").onclick = () => openAuth("login"); $("#aux").onclick = closeAuth;
+  $("#acct").onclick = () => openAuth(); $("#aux").onclick = closeAuth;
   $("#authsheet").onclick = e => { if (e.target.id === "authsheet") closeAuth(); };
-  document.querySelectorAll(".autabs button").forEach(b => b.onclick = () => setAuthMode(b.dataset.m));
   paintAcct();
   if (!window.NI) return;
   try { const st = await NI.getSettings(); if (st?.providers?.google) { const g = $("#au-google"); g.hidden = false; g.onclick = () => NI.oauthLogin("google"); } } catch (e) {}
+  // One button: sign in if the account exists, otherwise create it.
   $("#au-form").onsubmit = async e => {
-    e.preventDefault(); const em = $("#au-email").value.trim(), pw = $("#au-pw").value, nm = $("#au-name").value.trim(), msg = $("#au-msg"); msg.className = "verdict";
+    e.preventDefault(); const em = $("#au-email").value.trim(), pw = $("#au-pw").value, msg = $("#au-msg"); msg.className = "verdict";
     if (!/^\S+@\S+\.\S+$/.test(em)) { msg.textContent = "Enter your email address."; return; }
-    if (pw.length < 8) { msg.textContent = "Use a password with at least 8 characters."; return; }
-    if (authMode === "signup" && nm.length < 2) { msg.textContent = "Pick an explorer name."; return; }
-    $("#au-go").disabled = true; msg.textContent = authMode === "signup" ? "Creating your account…" : "Signing in…";
-    try {
-      if (authMode === "signup") {
-        const u = await NI.signup(em, pw, { full_name: nm });
-        let cur = null; try { cur = await NI.getUser(); } catch (x) {}
-        if (!cur) { try { cur = await NI.login(em, pw); } catch (x) {} }
-        if (cur) { closeAuth(); await signedIn(cur); celebrate("Welcome, " + nm + "!", "Your expedition is saved"); }
-        else { msg.className = "verdict ok"; msg.textContent = "Almost there! We sent a confirmation link to " + em + ". Open it on this phone to finish."; }
-      } else { const u = await NI.login(em, pw); closeAuth(); await signedIn(u); toast("Welcome back, " + (window.bvMe?.name || "explorer") + "!"); }
-    } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); }
+    if (pw.length < 8) { msg.textContent = "Passwords need at least 8 characters."; return; }
+    $("#au-go").disabled = true; msg.textContent = "One moment…";
+    try { const u = await NI.login(em, pw); await afterLogin(u, false); }
+    catch (x1) {
+      const m1 = String(x1?.message || "").toLowerCase();
+      if (m1.includes("confirm")) { msg.className = "verdict err"; msg.textContent = "Check your inbox for the confirmation link we sent, then come back."; $("#au-go").disabled = false; return; }
+      try {
+        await NI.signup(em, pw, {});
+        let u = null; try { u = await NI.getUser(); } catch (x) {} if (!u) { try { u = await NI.login(em, pw); } catch (x) {} }
+        if (u) await afterLogin(u, true);
+        else { msg.className = "verdict ok"; msg.textContent = "Almost there! We emailed a link to " + em + ". Tap it to finish."; }
+      } catch (x2) {
+        const m2 = String(x2?.message || "").toLowerCase();
+        msg.className = "verdict err";
+        if (m2.includes("already") || m2.includes("registered") || m2.includes("exists")) { msg.textContent = "Wrong password for that email."; $("#au-forgot").hidden = false; }
+        else msg.textContent = authErr(x2);
+      }
+    }
     $("#au-go").disabled = false;
   };
+  $("#au-nmgo").onclick = async () => { const nm = $("#au-nm").value.trim(), msg = $("#au-msg4"); if (nm.length < 2) { msg.textContent = "Pick a name with at least 2 letters."; return; } $("#au-nmgo").disabled = true; try { await NI.updateUser({ data: { full_name: nm } }); await NI.refreshSession?.(); const me = (await bvDB.api("me")).user; if (me) window.bvMe = { ...window.bvMe, ...me }; paintAcct(); closeAuth(); celebrate("Welcome, " + nm + "!", "Your expedition is saved"); } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } $("#au-nmgo").disabled = false; };
   $("#au-forgot").onclick = async () => { const em = $("#au-email").value.trim(), msg = $("#au-msg"); if (!/^\S+@\S+\.\S+$/.test(em)) { msg.textContent = "Type your email above first."; return; } try { await NI.requestPasswordRecovery(em); msg.className = "verdict ok"; msg.textContent = "Check your email for a link to reset your password."; } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } };
   $("#au-out").onclick = async () => { clearTimeout(progT); if (progReady) { try { await bvDB.api("me/progress", { method: "PUT", json: { found, answers, hints, relics, uploads, firsts } }); } catch (e) {} } try { await NI.logout(); } catch (e) {} PROG_KEYS.forEach(k => { try { localStorage.removeItem(KEY + k); } catch (e) {} }); location.reload(); };
   $("#au-savename").onclick = async () => { const nm = $("#au-rename").value.trim(), msg = $("#au-msg2"); if (nm.length < 2) { msg.textContent = "Pick a name with at least 2 letters."; return; } try { await NI.updateUser({ data: { full_name: nm } }); await NI.refreshSession?.(); const me = (await bvDB.api("me")).user; if (me) window.bvMe = { ...window.bvMe, ...me }; paintAcct(); msg.className = "verdict ok"; msg.textContent = "Saved. The board updates within a minute."; } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } };
@@ -93,7 +98,7 @@ addEventListener("pagehide", () => { if (myId && progReady && progT) { clearTime
   let cb = null; try { cb = await NI.handleAuthCallback(); } catch (e) { toast("That link has expired. Try again."); }
   let u = cb?.user || null; if (!u) { try { u = await NI.getUser(); } catch (e) {} }
   if (u) await signedIn(u);
-  if (cb?.type === "confirmation") celebrate("Welcome aboard!", "Your expedition is saved");
+  if (cb?.type === "confirmation" && u) { if (!u.name) { showPane("auname"); $("#authsheet").hidden = false; } else celebrate("Welcome aboard!", "Your expedition is saved"); }
   if (cb?.type === "oauth" && u) toast("Signed in as " + (window.bvMe?.name || "explorer"));
-  if (cb?.type === "recovery") { $("#auin").hidden = true; $("#auout").hidden = true; $("#aureset").hidden = false; $("#authsheet").hidden = false; }
+  if (cb?.type === "recovery") { showPane("aureset"); $("#authsheet").hidden = false; }
 })();

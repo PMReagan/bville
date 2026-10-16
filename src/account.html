@@ -1,18 +1,23 @@
 <div class="sheet" id="authsheet" hidden><div class="card authcard" role="dialog" aria-modal="true" aria-labelledby="au-h">
   <button class="btn" id="aux" type="button" style="float:right">Close</button>
   <div id="auin">
-    <h2 id="au-h">Join the expedition</h2>
-    <p class="hint" id="au-sub">Save your finds and Marthas on any phone, post photos and compete on the Martha Board.</p>
-    <div class="autabs" role="tablist"><button type="button" role="tab" data-m="signup" aria-selected="true">New explorer</button><button type="button" role="tab" data-m="login" aria-selected="false">I have an account</button></div>
-    <button class="btn google" id="au-google" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.1 14.6 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.6-4.1 9.6-9.8 0-.7-.1-1.2-.2-1.7H12z"/></svg>Continue with Google</button>
+    <h2 id="au-h">Save your expedition</h2>
+    <p class="hint" style="margin-bottom:18px">Keep your Marthas on any phone and join the Martha Board.</p>
     <form id="au-form" novalidate>
-      <label class="fld" id="au-namef"><span>Explorer name <small>(shown on the Martha Board)</small></span><input id="au-name" autocomplete="nickname" maxlength="40" placeholder="e.g. Paul R."></label>
-      <label class="fld"><span>Email <small>(never shown to other players)</small></span><input id="au-email" type="email" autocomplete="email" required></label>
-      <label class="fld" id="au-pwf"><span>Password</span><input id="au-pw" type="password" autocomplete="new-password" minlength="8" required></label>
-      <button class="btn go big" id="au-go" type="submit">Join the expedition</button>
+      <label class="fld"><span>Email</span><input id="au-email" type="email" autocomplete="email" inputmode="email" required></label>
+      <label class="fld"><span>Password</span><input id="au-pw" type="password" autocomplete="current-password" minlength="8" required></label>
+      <button class="btn go big" id="au-go" type="submit">Continue</button>
       <p class="verdict" id="au-msg" aria-live="polite"></p>
       <button class="introlink" id="au-forgot" type="button" hidden>Forgot your password?</button>
     </form>
+    <button class="btn google" id="au-google" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.1 14.6 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.6-4.1 9.6-9.8 0-.7-.1-1.2-.2-1.7H12z"/></svg>Continue with Google</button>
+  </div>
+  <div id="auname" hidden>
+    <h2>One last thing</h2>
+    <p class="hint">What should we call you on the Martha Board? Your email is never shown.</p>
+    <label class="fld"><span>Explorer name</span><input id="au-nm" autocomplete="nickname" maxlength="40" placeholder="e.g. Paul R."></label>
+    <button class="btn go big" id="au-nmgo" type="button">Start exploring</button>
+    <p class="verdict" id="au-msg4" aria-live="polite"></p>
   </div>
   <div id="auout" hidden>
     <h2>Your expedition</h2>
