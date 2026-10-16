@@ -134,7 +134,7 @@ h1{font-family:var(--f-display);font-weight:400;font-size:clamp(34px,8vw,64px);l
 .hero img{display:block;width:100%;max-height:58vh;object-fit:contain;background:#07100F}
 .hero img.tiny{width:auto;max-width:min(100%,280px);margin:0 auto}
 .hero.unk img{filter:grayscale(1) brightness(.18) contrast(1.6) blur(3px)}
-.hero.unk::after{content:"?";position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:96px;color:rgba(240,167,58,.5)}
+.hero.unk::after{content:"?";position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:64px;color:rgba(240,167,58,.5)}
 .layers{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px}
 .layer{border:1px solid var(--line);background:var(--rock);border-radius:8px;padding:6px 12px;font-family:var(--f-label);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:14px;cursor:pointer;color:var(--dust)}
 .layer[aria-pressed="true"]{background:var(--bone);color:var(--night);border-color:var(--bone)}
@@ -367,6 +367,18 @@ h1 .flame{width:.8em;height:.95em;flex:none;filter:drop-shadow(0 0 10px rgba(255
 .howbtn.icon{padding:6px 9px;display:inline-grid;place-items:center}.howbtn.icon svg{width:18px;height:18px}
 .howbtn.icon[aria-pressed="false"]{color:#6B7F94}
 .ambi{display:flex;gap:10px;align-items:center;margin-top:14px;color:var(--bone);font-size:15px;cursor:pointer}.ambi input{width:20px;height:20px;accent-color:var(--torch)}
+/* ===== The hunt ===== */
+.stepno{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--torch);color:#1A0E03;font-family:var(--f-display);font-size:12px;margin-right:2px}
+.box.locked{opacity:.55}.box.locked .stepno{background:var(--line);color:var(--dust)}
+.lineup{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.cand{position:relative;padding:0;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:#000;cursor:pointer;aspect-ratio:4/3;transition:transform .15s,border-color .15s}
+.cand img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(1) contrast(1.12) brightness(.95)} /* all black-and-white so colour gives nothing away */
+.cand:hover:not(:disabled){border-color:var(--torch);transform:translateY(-2px)}
+.cand span{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:34px;color:#FF8A5E}
+.cand.wrong{border-color:var(--ember)}.cand.wrong img{filter:grayscale(1) brightness(.35)}
+.cand.gone img{filter:grayscale(1) brightness(.25)}.cand.gone span{font-family:var(--f-label);font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--dust)}
+.cracked{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(46,230,166,.12);border:1px solid rgba(46,230,166,.45);color:var(--bone)}
+.hero.unk{min-height:96px;background:radial-gradient(circle at 50% 40%,#16305a,#08111F)}
 /* ===== Accounts ===== */
 #authsheet{z-index:40}#howsheet{z-index:35}.toast{z-index:55}
 .hbtns{display:flex;gap:6px}
@@ -569,7 +581,7 @@ const STARTER = 250; // every explorer starts with a purse, so they can try hint
 function xp(){
   let x = STARTER;
   for (const id in found) { const s = BY[id]; if (!s) continue; x += 100 + RAR_XP[s.rarity] + (found[id].field ? 50 : 0); }
-  for (const k in answers) if (answers[k].ok) x += 25;
+  for (const k in answers) { const A = answers[k]; if (k.endsWith(":lead")) { if (A.ok) x += Math.max(10, 50 - 20 * (A.wrong || []).length); } else if (A.ok) x += 25; }
   for (const id in hints) x -= 20;
   for (const id in relics) x += 200;
   for (const id in uploads) x += 75;
@@ -685,7 +697,20 @@ function render(){ paintTop(); if (tab === "map") { drawAlert(); drawMap(); } if
 
 /* ---------- dossier ---------- */
 let cur = null, layer = "archive", shot = 0;
-function hasHint(s){ return !!hints[s.id] || !!found[s.id]; }
+function leadOK(s){ return !!found[s.id] || !!answers[s.id + ":lead"]?.ok || !candPhoto(s); }
+function hasHint(s){ return leadOK(s); }
+const candPhoto = s => (s.photos[0] || s.archive[0] || [null])[0];
+function hashStr(t){ let h = 2166136261; for (const ch of t) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+// Four photos to choose from: the real site plus three look-alikes (same kind of building when possible). Stable per site.
+function lineup(s){
+  const r = seeded(hashStr(s.id)), shop = t => t === "Commercial" || t === "Civic";
+  const pool = SITES.filter(o => o.id !== s.id && candPhoto(o)), same = pool.filter(o => shop(o.type) === shop(s.type));
+  const pick = [], src = same.length >= 3 ? same.slice() : pool.slice();
+  while (pick.length < 3 && src.length) pick.push(src.splice(Math.floor(r() * src.length), 1)[0]);
+  const all = [s, ...pick]; for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; }
+  return all;
+}
+function distM(a, b, c, d){ const R = 6371000, t = x => x * Math.PI / 180, dl = t(c - a), dn = t(d - b); const h = Math.sin(dl / 2) ** 2 + Math.cos(t(a)) * Math.cos(t(c)) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
 function openSite(id){ if (pending) { URL.revokeObjectURL(pending.url); pending = null; } cur = BY[id]; const s = cur;
   { const wv = world().st[id], seen = load("razedSeen", {});
     if (wv?.status === "demolished" && !seen[id + ":" + wv.since]) { seen[id + ":" + wv.since] = 1; save("razedSeen", seen); SFX.play("demolished"); setTimeout(() => { const c = $("#card"); c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake"); }, 60); }
@@ -699,11 +724,11 @@ function paintCard(){
   const todayList = todayDocs.map(d => ["/api/img/" + d.asset, (d.text || "Explorer’s photo") + " — " + ((d.author && pnames[d.author]) || "an explorer"), new Date(d.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })]);
   const list = layer === "archive" ? s.archive : layer === "y2001" ? s.photos : todayList;
   const ph = list[shot] || list[0];
-  const heroPhoto = f ? ph : (s.photos[0] || s.archive[0]);
+  const heroPhoto = f ? ph : null;
   const idx = SITES.indexOf(s);
   const tests = [];
   if (!f) {
-    if (s.q) tests.push({ kind: "field", label: "Prove you’re there", text: s.q.text, opts: s.q.opts, a: s.q.a });
+    if (s.q) tests.push({ kind: "field", label: "Or answer this at the site", text: s.q.text, opts: s.q.opts, a: s.q.a });
   } else {
     if (s.year) tests.push(decadeQ(s));
   }
@@ -717,7 +742,7 @@ function paintCard(){
     <div class="bar2"><span class="dno">SITE ${s.no} · ${f ? "DISCOVERED" : "UNDISCOVERED"}</span><button class="btn" id="x" type="button">Close</button></div>
     <h2 id="d-name" class="${f ? "" : "unk"}">${f ? esc(s.name) : "Unknown site"}</h2>
     <div class="badges">${typeChip(s.type)}<span class="ra ${s.rarity}">${s.rarity}</span>${s.lost ? `<span class="ra Lost">Original is gone</span>` : ""}</div>
-    <div class="hero${f ? "" : " unk"}" id="hero">${heroPhoto ? `<img id="heroimg" src="${IMG(heroPhoto[0])}" alt="${f ? esc(heroPhoto[1]) : "Hidden site"}" onload="if(this.naturalWidth<160)this.classList.add('tiny')" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'hint',style:'padding:50px 16px;text-align:center',textContent:'This photo couldn’t load. Try again in a moment.'}))">` : `<div style="padding:60px 16px;text-align:center" class="hint">${f && layer === "today" ? "Layer 3 is still buried. Add today’s photo below." : "No photo yet"}</div>`}</div>
+    <div class="hero${f ? "" : " unk"}" id="hero">${heroPhoto ? `<img id="heroimg" src="${IMG(heroPhoto[0])}" alt="${f ? esc(heroPhoto[1]) : "Hidden site"}" onload="if(this.naturalWidth<160)this.classList.add('tiny')" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'hint',style:'padding:50px 16px;text-align:center',textContent:'This photo couldn’t load. Try again in a moment.'}))">` : `<div style="padding:60px 16px;text-align:center" class="hint">${!f ? "" : layer === "today" ? "Layer 3 is still buried. Add today’s photo below." : "No photo yet"}</div>`}</div>
     ${f ? `
       <div class="layers" role="group" aria-label="Excavation layers">
         <button class="layer${s.archive.length ? "" : " empty"}" data-l="archive" aria-pressed="${layer === "archive"}" type="button">Layer 1 · Then</button>
@@ -728,11 +753,8 @@ function paintCard(){
         : `<p class="hint" style="margin-top:8px">${layer === "today" ? "No one has excavated this layer yet. Be the first: add today’s photo below." : "Nothing recovered from this layer yet."}</p>`}
       ${layer === "today" ? uploadBox(s) : ""}
     ` : ""}
-    <div class="box"><h3>${f ? "The lead that brought you here" : "The lead"}</h3><p class="clue">${esc(s.clue || defaultClue(s))}</p>
-      <div class="row2"><span class="hint">Search area: <strong>${esc(s.street)}</strong>${hasHint(s) ? ` · <strong>${esc(s.addr)}</strong>` : ""}</span></div>
-      <div class="row2">${hasHint(s) ? `<a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.addr.split(" / ")[0] + ", Birmingham, MI")}" target="_blank" rel="noopener">Directions</a>` : `<button class="btn" id="hintbtn" type="button">Reveal the exact address (costs 20 Marthas)</button>`}</div>
-    </div>
-    ${!f ? testHTML + `<div class="box"><h3>${s.q ? "No luck? Check in instead" : "Prove you’re there"}</h3><p class="hint">${s.q ? "If you can’t make out the detail, check in when you’re standing at the site. You’ll miss the 50-Martha field bonus." : "There’s no field test for this site yet. Check in when you’re standing in front of it."}</p><div class="row2"><button class="btn go" id="checkin" type="button">I’m standing here</button></div></div>` : ""}
+    ${f ? `<div class="box"><h3>The lead that brought you here</h3><p class="clue">${esc(s.clue || defaultClue(s))}</p>
+      <div class="row2"><span class="hint"><strong>${esc(s.addr)}</strong></span><a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.addr.split(" / ")[0] + ", Birmingham, MI")}" target="_blank" rel="noopener">Directions</a></div></div>` : leadBox(s, testHTML)}
     ${f ? `
       <div class="stats"><div class="stat"><b>${esc(s.yearLabel || "?")}</b><span>Built</span></div><div class="stat"><b>${s.year ? (new Date().getFullYear() - s.year) : "?"}</b><span>Years old</span></div><div class="stat"><b>${s.archive.length + s.photos.length}</b><span>Photos found</span></div></div>
       <div class="box"><h3>From the archive</h3><p class="story" id="story"></p>${s.style ? `<p class="src">Style, per the archive: ${esc(s.style)}</p>` : ""}<p class="src" id="srcline"></p></div>
@@ -750,10 +772,45 @@ function paintCard(){
   wireDefend(s);
   wireUpload(s);
   c.querySelectorAll(".strip img").forEach(im => im.onclick = () => { shot = +im.dataset.j; paintCard(); });
-  const hb = $("#hintbtn"); if (hb) hb.onclick = () => { hints[s.id] = Date.now(); save("hints", hints); paintCard(); paintTop(); };
-  const ci = $("#checkin"); if (ci) ci.onclick = () => discover(false);
+  wireLead(s);
   c.querySelectorAll(".opts[data-k] .opt").forEach(b => b.onclick = () => answer(tests[+b.parentNode.dataset.k], +b.dataset.j, b));
   renderReportUI(); paintReports();
+}
+function leadBox(s, testHTML){
+  const A = answers[s.id + ":lead"] || {}, ok = leadOK(s), wrong = A.wrong || [], cut = hints[s.id] ? lineup(s).filter(o => o.id !== s.id && !wrong.includes(o.id)).slice(0, 2).map(o => o.id) : [];
+  const step1 = `<div class="box lead"><h3><span class="stepno">1</span>Crack the lead</h3><p class="clue">${esc(s.clue || defaultClue(s))}</p>
+    <p class="hint" style="margin:10px 0 0">Search area: <strong>${esc(s.street)}</strong></p>
+    ${ok ? `<div class="cracked">Lead cracked${A.ok ? ` · +${Math.max(10, 50 - 20 * wrong.length)} Marthas` : ""}. It’s at <strong>${esc(s.addr)}</strong>.</div>`
+      : `<p class="q" style="margin-top:12px">Which of these is it?</p>
+        <div class="lineup">${lineup(s).map(o => { const bad = wrong.includes(o.id), gone = cut.includes(o.id); return `<button class="cand${bad ? " wrong" : ""}${gone ? " gone" : ""}" data-id="${o.id}" type="button" ${bad || gone ? "disabled" : ""} aria-label="${bad ? "Not this one" : "Choose this building"}"><img src="${IMG(candPhoto(o))}" alt="" loading="lazy"><span>${bad ? "✕" : gone ? "Ruled out" : ""}</span></button>`; }).join("")}</div>
+        <div class="row2"><span class="hint">First try earns 50 Marthas. Each miss costs 20 of that.</span>${hints[s.id] ? "" : `<button class="btn" id="hintbtn" type="button">Ask a local: rule out two (20 Marthas)</button>`}</div>`}</div>`;
+  const step2 = `<div class="box${ok ? "" : " locked"}"><h3><span class="stepno">2</span>Prove you’re there</h3>
+    ${ok ? `<p class="hint">Go to <strong>${esc(s.addr)}</strong>, then check in. Standing there earns the 50-Martha field bonus.</p>
+      <div class="row2"><button class="btn go" id="gps" type="button">Check in with my location</button><a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.addr.split(" / ")[0] + ", Birmingham, MI")}" target="_blank" rel="noopener">Directions</a></div>
+      <p class="verdict" id="gpsmsg" aria-live="polite"></p>
+      <div id="honor" hidden><p class="hint">Your phone couldn’t share its location. If you’re standing at the site, you can check in on your honor (no field bonus).</p><div class="row2"><button class="btn" id="checkin" type="button">I’m standing here</button></div></div>`
+      : `<p class="hint">Crack the lead first. Then head there and check in.</p>`}</div>`;
+  return step1 + step2 + (ok ? testHTML : "");
+}
+function wireLead(s){
+  document.querySelectorAll(".cand:not([disabled])").forEach(b => b.onclick = () => {
+    const key = s.id + ":lead", A = answers[key] || { wrong: [] };
+    if (b.dataset.id === s.id) { answers[key] = { ...A, ok: true }; save("answers", answers); SFX.play("coins", 4); toast(`Lead cracked! +${Math.max(10, 50 - 20 * A.wrong.length)} Marthas`); }
+    else { A.wrong = [...(A.wrong || []), b.dataset.id]; answers[key] = A; save("answers", answers); SFX.play("wrong"); const c = $("#card"); c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake"); }
+    const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; paintTop();
+  });
+  const hb = $("#hintbtn"); if (hb) hb.onclick = () => { if (xp() < 20) { toast("You need 20 Marthas to ask a local."); return; } hints[s.id] = Date.now(); save("hints", hints); SFX.play("stamp"); const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; paintTop(); };
+  const ci = $("#checkin"); if (ci) ci.onclick = () => discover(false);
+  const g = $("#gps"); if (g) g.onclick = () => {
+    const msg = $("#gpsmsg"), honor = () => { $("#honor").hidden = false; };
+    if (!navigator.geolocation) { msg.textContent = "This phone can’t share its location."; honor(); return; }
+    g.disabled = true; msg.className = "verdict"; msg.textContent = "Finding you…";
+    navigator.geolocation.getCurrentPosition(pos => {
+      g.disabled = false; const d = distM(pos.coords.latitude, pos.coords.longitude, s.lat, s.lon), slack = Math.min(150, pos.coords.accuracy || 0);
+      if (d <= 200 + slack) { msg.textContent = ""; discover(true); }
+      else { msg.className = "verdict err"; msg.textContent = d > 1500 ? `You’re about ${(d / 1609).toFixed(1)} miles away. Head to ${s.street} and try again.` : `You’re about ${Math.round(d / 0.3048 / 10) * 10} feet away. Get closer and try again.`; SFX.play("wrong"); }
+    }, err => { g.disabled = false; msg.className = "verdict err"; msg.textContent = err.code === 1 ? "Location is turned off for this site." : "Couldn’t get a location fix."; honor(); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  };
 }
 function defaultClue(s){
   const era = s.year < 1860 ? "a pioneer-era" : s.year < 1900 ? "a nineteenth-century" : "an early twentieth-century";
