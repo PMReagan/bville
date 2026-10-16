@@ -44,7 +44,7 @@ s += '\n</body>\n</html>\n'
 
 # --- header: account chip
 R('<button class="howbtn" id="how" type="button" aria-label="How to play">How to play</button>',
-  '<span class="hbtns"><button class="howbtn" id="acct" type="button">Sign in</button><button class="howbtn" id="how" type="button" aria-label="How to play">How?</button></span>')
+  '<span class="hbtns"><button class="howbtn icon" id="snd" type="button" aria-pressed="true" aria-label="Sound on"></button><button class="howbtn" id="acct" type="button">Sign in</button><button class="howbtn" id="how" type="button" aria-label="How to play">How?</button></span>')
 R('<button class="cta" id="start" type="button">Start the hunt</button>',
   '<button class="cta" id="start" type="button">Start the hunt</button>\n    <button class="introlink" id="introsign" type="button" data-auth>Already exploring? Sign in</button>')
 
