@@ -1,0 +1,18 @@
+/* ===== Accounts ===== */
+.hbtns{display:flex;gap:6px}
+#acct.in{color:var(--bone);border-color:var(--jade);max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.introlink{background:none;border:0;color:var(--dust);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:15px;padding:4px}
+.introlink:hover{color:var(--bone)}
+.authcard{padding:22px;max-width:520px}
+.authcard h2{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0 0 6px;color:var(--torch)}
+.autabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--night);border:1px solid var(--line);border-radius:12px;padding:4px;margin:16px 0}
+.autabs button{border:0;background:none;border-radius:9px;padding:9px 6px;font-family:var(--f-label);font-weight:600;letter-spacing:.06em;font-size:16px;color:var(--dust);cursor:pointer}
+.autabs button[aria-selected="true"]{background:var(--rock);color:var(--bone)}
+.fld{display:grid;gap:4px;margin-bottom:12px}
+.fld span{font-family:var(--f-label);font-weight:600;letter-spacing:.06em;font-size:15px}.fld small{color:var(--dust);font-weight:500;letter-spacing:0}
+.fld input{font:inherit;font-size:16px;color:var(--bone);background:var(--night);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
+.fld input:focus{border-color:var(--sky);outline:none;box-shadow:0 0 0 3px rgba(76,201,240,.2)}
+.btn.big{width:100%;padding:13px;font-size:19px}
+.btn.google{width:100%;display:flex;gap:10px;justify-content:center;align-items:center;background:#fff;color:#1F1F1F;border-color:#fff;margin-bottom:14px;padding:11px}
+.btn.google svg{width:20px;height:20px}
+.ok{color:var(--jade)}.err{color:#FF8A5E}

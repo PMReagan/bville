@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>bVille Expedition · Birmingham, Michigan</title>
+<meta name="description" content="78 historic sites are hiding in plain sight in Birmingham, Michigan. Crack the riddles, dig through time and stop the Syndicate.">
+<meta name="theme-color" content="#08111F">
+<meta property="og:title" content="bVille Expedition">
+<meta property="og:description" content="78 historic sites are hiding in plain sight. Find them before the bulldozers do.">
+<meta property="og:image" content="/img/walk/img/hunter-a1.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 28%22%3E%3Cpath d=%22M12 1c1 5 7 8 7 15a7 7 0 0 1-14 0c0-4 2-6 3-9 1 3 2 4 3 4-1-4 0-7 1-10z%22 fill=%22%23FF7A3D%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Barlow+Condensed:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a torchlit expedition console. Rank + progress up top; three tabs (Map, Journal, Expeditions);
+   tapping any site opens a full-height dossier with the clue, the on-site test, excavation layers and the story. */
+:root{
+  --night:#0E1719;      /* deep jungle night: page ground */
+  --cave:#16252A;       /* panels */
+  --rock:#22363C;       /* raised panels, map land */
+  --line:#34494F;
+  --bone:#EFE7D6;       /* primary text */
+  --dust:#A9B3AF;       /* secondary text */
+  --torch:#F0A73A;      /* amber torchlight: primary accent */
+  --ember:#E0592E;      /* danger / lost */
+  --jade:#4FB38A;       /* found / success */
+  --street:#2C4248;
+  --f-display:"Alfa Slab One","Rockwell","Roboto Slab",Georgia,serif;
+  --f-label:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--night);color:var(--bone)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 56px;
+  background-image:radial-gradient(1200px 500px at 50% -120px,rgba(240,167,58,.16),transparent 70%)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--torch);outline-offset:2px}
+.wrap{max-width:1100px;margin:0 auto}
+
+/* Header */
+.top{padding-block:26px 14px;display:grid;gap:14px}
+.kicker{font-family:var(--f-label);font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--torch);font-size:14px;display:flex;align-items:center;gap:10px}
+.kicker svg{width:22px;height:22px}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(34px,8vw,64px);line-height:.95;margin:0;letter-spacing:.01em;text-wrap:balance;
+  background:linear-gradient(180deg,#FFD58A 0%,var(--torch) 55%,#B8641E 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 30px rgba(240,167,58,.18)}
+.lede{max-width:62ch;color:var(--dust);margin:0}
+.rankbar{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:var(--cave);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.rank{font-family:var(--f-label);font-weight:700;font-size:20px;letter-spacing:.04em;text-transform:uppercase}
+.rank small{display:block;font-size:12px;color:var(--dust);letter-spacing:.14em}
+.xp{height:10px;background:var(--rock);border-radius:99px;overflow:hidden;min-width:0}
+.xp i{display:block;height:100%;background:linear-gradient(90deg,var(--ember),var(--torch));border-radius:99px;transition:width .6s}
+.tally{font-family:var(--f-label);font-size:15px;text-align:right;white-space:nowrap}
+.tally b{font-size:22px;color:var(--torch)}
+@media (max-width:520px){.rankbar{grid-template-columns:1fr auto}.xp{grid-column:1/-1;order:3}}
+
+/* Tabs */
+.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;margin:16px 0 14px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;padding:10px 4px 12px;font-family:var(--f-label);font-weight:600;font-size:clamp(14px,4vw,18px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.08em;text-transform:uppercase;color:var(--dust);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--bone);border-color:var(--torch)}
+
+/* Map */
+.mapwrap{background:var(--cave);border:1px solid var(--line);border-radius:14px;padding:10px;min-width:0}
+.zooms{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{border:1px solid var(--line);background:var(--rock);border-radius:99px;padding:5px 12px;font-family:var(--f-label);font-weight:600;letter-spacing:.06em;font-size:14px;cursor:pointer;color:var(--dust)}
+.chip[aria-pressed="true"]{background:var(--torch);border-color:var(--torch);color:#1A1206}
+#map{display:block;width:100%;height:auto;max-width:100%;border-radius:10px;touch-action:manipulation}
+.st{stroke:var(--street);fill:none;stroke-linecap:round}
+.slabel{font-family:var(--f-label);font-weight:600;letter-spacing:.16em;fill:#5E7479}
+.mk{cursor:pointer}
+.mk .ring{fill:var(--night);stroke:var(--dust);stroke-width:1.4}
+.mk .q{font-family:var(--f-display);fill:var(--dust);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.mk.found .ring{fill:var(--torch);stroke:#FFD58A}
+.mk.found .q{fill:#1A1206}
+.mk.lost .ring{stroke:var(--ember);stroke-dasharray:2 2}
+.mk:hover .ring,.mk:focus .ring{stroke:var(--torch);stroke-width:2.4}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--dust);padding:8px 4px 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1.5px solid var(--dust);background:var(--night)}
+.dot.f{background:var(--torch);border-color:#FFD58A}
+
+/* Journal grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{position:relative;background:var(--cave);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;text-align:left;padding:0;display:flex;flex-direction:column}
+.tile:hover{border-color:var(--torch)}
+.tile .ph{aspect-ratio:4/3;width:100%;max-width:100%;object-fit:cover;display:block;background:var(--rock)}
+.tile.unk .ph{filter:grayscale(1) brightness(.22) contrast(1.4) blur(1.5px)}
+.tile .no{position:absolute;top:8px;left:8px;font-family:var(--f-label);font-weight:700;font-size:13px;background:rgba(14,23,25,.8);border-radius:6px;padding:1px 7px;letter-spacing:.06em}
+.tile .qm{position:absolute;inset:0 0 auto 0;aspect-ratio:4/3;display:grid;place-items:center;font-family:var(--f-display);font-size:44px;color:rgba(239,231,214,.35)}
+.tile .body{padding:8px 10px 10px;display:grid;gap:4px;min-width:0}
+.tile .nm{font-weight:700;font-size:15px;line-height:1.2}
+.tile.unk .nm{color:var(--dust);font-weight:600;font-style:italic;font-size:13px}
+.badges{display:flex;flex-wrap:wrap;gap:4px}
+.ty{font-family:var(--f-label);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;border-radius:5px;padding:1px 7px;color:#0E1719}
+.ra{font-family:var(--f-label);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;border-radius:5px;padding:0 6px;border:1px solid currentColor}
+.ra.Common{color:#8FA3A0}.ra.Uncommon{color:var(--jade)}.ra.Rare{color:#6DB3F2}.ra.Legendary{color:#FFD58A;background:rgba(240,167,58,.15)}.ra.Lost{color:var(--ember);border-style:dashed}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+
+/* Expeditions */
+.exps{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.exp{background:var(--cave);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:8px;min-width:0}
+.exp.done{border-color:var(--torch);box-shadow:0 0 0 1px var(--torch) inset,0 0 30px rgba(240,167,58,.12)}
+.exp h3{font-family:var(--f-display);font-weight:400;font-size:22px;margin:0;line-height:1.1;color:var(--bone)}
+.exp p{margin:0;color:var(--dust);font-size:14px}
+.bar{height:8px;background:var(--rock);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--jade)}
+.exp.done .bar i{background:var(--torch)}
+.mini{display:flex;flex-wrap:wrap;gap:5px}
+.mini button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--rock);font-family:var(--f-label);font-weight:700;font-size:13px;cursor:pointer;color:var(--dust)}
+.mini button.f{background:var(--torch);color:#1A1206;border-color:#FFD58A}
+.relic{font-family:var(--f-label);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--torch);font-size:13px;display:flex;gap:8px;align-items:center}
+.relic svg{width:22px;height:22px}
+
+/* Dossier */
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(4,8,9,.7);display:flex;justify-content:flex-end}
+.card{background:var(--cave);width:min(640px,100%);height:100%;overflow-y:auto;border-left:1px solid var(--line);
+  padding:calc(14px + env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) calc(48px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+.bar2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.btn{border:1.5px solid var(--line);background:var(--rock);border-radius:10px;padding:9px 14px;font-family:var(--f-label);font-weight:600;font-size:16px;letter-spacing:.06em;cursor:pointer}
+.btn.go{background:var(--torch);border-color:var(--torch);color:#1A1206}
+.btn:disabled{opacity:.4;cursor:default}
+.dno{font-family:var(--f-label);font-weight:700;letter-spacing:.14em;color:var(--dust)}
+.card h2{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,6vw,40px);line-height:1.02;margin:6px 0 6px;text-wrap:balance}
+.card h2.unk{color:var(--dust)}
+.addr{color:var(--dust);font-size:14px}
+.hero{position:relative;margin:14px 0 6px;border-radius:12px;overflow:hidden;background:#000}
+.hero img{display:block;width:100%;max-height:58vh;object-fit:contain;background:#07100F}
+.hero img.tiny{width:auto;max-width:min(100%,280px);margin:0 auto}
+.hero.unk img{filter:grayscale(1) brightness(.18) contrast(1.6) blur(3px)}
+.hero.unk::after{content:"?";position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:96px;color:rgba(240,167,58,.5)}
+.layers{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px}
+.layer{border:1px solid var(--line);background:var(--rock);border-radius:8px;padding:6px 12px;font-family:var(--f-label);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:14px;cursor:pointer;color:var(--dust)}
+.layer[aria-pressed="true"]{background:var(--bone);color:var(--night);border-color:var(--bone)}
+.layer.empty{opacity:.55}.layer.empty[aria-pressed="true"]{opacity:1}
+.cap{font-size:13px;color:var(--dust);display:flex;justify-content:space-between;gap:10px}
+.strip{display:flex;gap:6px;overflow-x:auto;padding:6px 0}
+.strip img{height:54px;width:auto;border-radius:6px;cursor:pointer;opacity:.6;border:2px solid transparent}
+.strip img[aria-current="true"]{opacity:1;border-color:var(--torch)}
+.box{background:var(--night);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+.box h3{font-family:var(--f-label);font-weight:700;font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:var(--torch);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.clue{font-size:19px;line-height:1.45;margin:0;font-style:italic}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.stat{background:var(--rock);border-radius:10px;padding:8px 10px;min-width:0}
+.stat b{display:block;font-family:var(--f-label);font-size:22px;line-height:1.1}
+.stat span{font-size:12px;color:var(--dust);letter-spacing:.08em;text-transform:uppercase;font-family:var(--f-label)}
+.story{margin:0;font-size:16px}
+.src{font-size:13px;color:var(--dust);margin-top:8px}
+.q{font-size:17px;margin:0 0 10px}
+.opts{display:grid;gap:6px}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--rock);border-radius:10px;padding:11px 13px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--torch)}
+.opt.right{border-color:var(--jade);background:rgba(79,179,138,.16)}
+.opt.wrong{border-color:var(--ember);color:var(--dust);text-decoration:line-through}
+.opt:disabled{cursor:default}
+.verdict{font-family:var(--f-label);font-size:16px;letter-spacing:.04em;margin-top:8px;min-height:1.2em}
+.row2{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+a.btn{text-decoration:none;color:var(--bone);display:inline-block}
+.reveal{animation:none}
+@media (prefers-reduced-motion:no-preference){
+  .reveal{animation:dig .9s cubic-bezier(.2,.9,.3,1)}
+  @keyframes dig{0%{filter:grayscale(1) brightness(.2) blur(6px);transform:scale(1.04)}60%{filter:grayscale(.3) brightness(1.1) blur(0)}100%{filter:none;transform:none}}
+  .toast{animation:pop .4s ease-out}
+  @keyframes pop{from{transform:translate(-50%,20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--torch);color:#1A1206;font-family:var(--f-label);font-weight:700;letter-spacing:.06em;font-size:17px;padding:10px 18px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.5);max-width:calc(100% - 32px);text-align:center}
+textarea{width:100%;min-height:76px;border:1.5px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:16px;background:var(--rock);color:var(--bone);resize:vertical}
+.reports{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:10px}
+.reports li{border-left:3px solid var(--torch);padding-left:10px}
+.meta{font-size:12px;color:var(--dust)}
+.hint{color:var(--dust);font-size:14px;margin:0}
+.coin{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFE2A3,var(--torch) 60%,#A85B16);color:#3A2306;font-family:var(--f-display);font-size:11px;vertical-align:-3px;box-shadow:0 0 0 1px #7A4410 inset}
+.coin.big{width:54px;height:54px;font-size:30px;flex:none}
+.boardhead{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.bh{font-family:var(--f-display);font-weight:400;font-size:28px;margin:0 0 4px;color:var(--torch)}
+.mecard{background:var(--cave);border:1px solid var(--torch);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.board{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.board li{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;background:var(--cave);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.board li.you{border-color:var(--torch)}
+.board .pos{font-family:var(--f-display);font-size:22px;color:var(--dust);text-align:center}
+.board li:nth-child(1) .pos{color:#FFD58A}.board li:nth-child(2) .pos{color:#D7DEE0}.board li:nth-child(3) .pos{color:#D99A6C}
+.board .who{min-width:0}.board .who b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.board .who span{font-size:13px;color:var(--dust)}
+.board .m{font-family:var(--f-label);font-weight:700;font-size:20px;display:flex;align-items:center;gap:6px}
+.alert{background:linear-gradient(90deg,rgba(224,89,46,.18),rgba(224,89,46,.04));border:1px solid rgba(224,89,46,.55);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.alerthead{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.alerthead b{font-family:var(--f-label);font-size:20px;letter-spacing:.12em;text-transform:uppercase;color:#FF8A5E}
+.siren{width:12px;height:12px;border-radius:50%;background:var(--ember);box-shadow:0 0 0 0 rgba(224,89,46,.7);display:inline-block;flex:none}
+@media (prefers-reduced-motion:no-preference){.siren{animation:siren 1.4s infinite}@keyframes siren{0%{box-shadow:0 0 0 0 rgba(224,89,46,.7)}70%{box-shadow:0 0 0 10px rgba(224,89,46,0)}100%{box-shadow:0 0 0 0 rgba(224,89,46,0)}}
+  .mk.threat .ring{animation:thr 1.4s infinite}@keyframes thr{50%{stroke-width:4}}}
+.threats{display:grid;gap:6px;margin-top:10px}
+.threat{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"no nm pt" "bar bar bar";gap:4px 10px;align-items:center;text-align:left;background:var(--night);border:1px solid rgba(224,89,46,.45);border-radius:10px;padding:8px 10px;cursor:pointer}
+.threat:hover{border-color:var(--ember)}
+.tno{grid-area:no;font-family:var(--f-label);font-weight:700;color:#FF8A5E}.tnm{grid-area:nm;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.tpt{grid-area:pt;font-family:var(--f-label);font-size:14px;color:var(--dust)}
+.tbar{grid-area:bar;height:6px;background:var(--rock);border-radius:99px;overflow:hidden}.tbar i{display:block;height:100%;background:var(--jade)}
+.mk.threat .ring{stroke:var(--ember);stroke-width:2.6}
+.mk.razed .ring{fill:var(--ember);stroke:#FF8A5E}.mk.razed .q{fill:#1A0A04}
+.tile.razed .ph{filter:grayscale(1) sepia(.4) hue-rotate(-20deg) brightness(.6)}
+.tflag{position:absolute;top:8px;right:8px;font-family:var(--f-label);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;background:var(--ember);color:#1A0A04;border-radius:6px;padding:1px 7px;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.box.danger{border-color:rgba(224,89,46,.6);background:linear-gradient(180deg,rgba(224,89,46,.10),var(--night) 60%)}
+.box.danger h3{color:#FF8A5E}
+.box h4{font-family:var(--f-label);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px;color:var(--dust);margin:14px 0 6px}
+.bar.big{height:12px;margin-top:10px}.bar.restore i{background:var(--torch)}
+.defs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.def{text-align:left;background:var(--rock);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;display:grid;gap:2px}
+.def:hover:not(:disabled){border-color:var(--torch)}.def:disabled{opacity:.45;cursor:default}
+.def b{font-family:var(--f-label);font-size:17px;letter-spacing:.04em}.def span{font-size:13px;color:var(--torch);display:flex;gap:4px;align-items:center}.def small{font-size:12px;color:var(--dust)}
+.rogue{display:grid;grid-template-columns:56px 1fr;gap:12px;align-items:center;border:2px solid var(--rc);border-radius:12px;padding:12px 14px;background:#0A1011;color:var(--rc);box-shadow:0 0 18px color-mix(in srgb,var(--rc) 45%,transparent),inset 0 0 18px color-mix(in srgb,var(--rc) 20%,transparent)}
+.rogue svg{width:56px;height:56px}
+.rogue b{display:block;font-family:var(--f-display);font-weight:400;font-size:22px;line-height:1.1;text-shadow:0 0 10px var(--rc)}
+.rogue span{display:block;color:var(--bone);font-size:14px;margin-top:2px}
+.rogue i{display:block;font-style:normal;font-family:var(--f-label);letter-spacing:.1em;font-size:13px;margin-top:4px}
+.rogue.big b{font-size:26px}
+.exp.danger{border-color:rgba(224,89,46,.55)}
+.ledger{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.ledger div{background:var(--rock);border-radius:8px;padding:6px 8px;text-align:center}.ledger b{display:block;font-family:var(--f-display);font-size:22px}.ledger span{font-family:var(--f-label);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--dust)}
+/* ===== FX layer: colour, light and motion ===== */
+:root{
+  --night:#08111F; --cave:#0F1D33; --rock:#18304D; --line:#28466B; --street:#1F3A5A;
+  --bone:#F4EEDF; --dust:#9FB3C8; --torch:#FFB43C; --ember:#FF5E3A; --jade:#2EE6A6; --sky:#4CC9F0; --orchid:#C77DFF;
+}
+html,body{background:var(--night)}
+body{background-image:
+  radial-gradient(900px 420px at var(--mx,50%) var(--my,-10%),rgba(255,180,60,.13),transparent 70%),
+  radial-gradient(1000px 600px at 110% 10%,rgba(76,201,240,.10),transparent 60%),
+  radial-gradient(900px 600px at -10% 60%,rgba(199,125,255,.09),transparent 60%),
+  radial-gradient(800px 500px at 60% 120%,rgba(46,230,166,.08),transparent 60%);
+  background-attachment:fixed}
+#fx,#burst{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#fx{z-index:0}#burst{z-index:60}
+.wrap{position:relative;z-index:1}
+/* Header */
+.kicker svg .needle{transform-origin:12px 12px}
+h1{background:linear-gradient(100deg,#FFE3A6 0%,var(--torch) 30%,#FF7A3D 50%,var(--torch) 70%,#FFE3A6 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 24px rgba(255,150,40,.25));display:flex;align-items:center;gap:.25em}
+h1 .flame{width:.8em;height:.95em;flex:none;filter:drop-shadow(0 0 10px rgba(255,140,40,.8))}
+.rankbar{background:linear-gradient(135deg,rgba(24,48,77,.85),rgba(15,29,51,.85));border-color:var(--line);box-shadow:0 10px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);backdrop-filter:blur(6px)}
+.xp{height:12px;background:#0A1628;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
+.xp i{background:linear-gradient(90deg,var(--orchid),var(--ember),var(--torch));position:relative;overflow:hidden;box-shadow:0 0 12px rgba(255,140,40,.6)}
+.xp i::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.28) 0 8px,transparent 8px 18px);background-size:36px 100%}
+.tally{position:relative}
+.plus{position:absolute;right:0;top:-6px;font-family:var(--f-display);font-size:20px;color:var(--torch);text-shadow:0 0 12px rgba(255,180,60,.9);pointer-events:none;white-space:nowrap}
+/* Tabs */
+.tabs{border-bottom-color:rgba(40,70,107,.7)}
+.tab{position:relative;border-bottom:0;transition:color .2s}
+.tab::after{content:"";position:absolute;left:12%;right:12%;bottom:0;height:3px;border-radius:3px;background:linear-gradient(90deg,var(--orchid),var(--torch),var(--jade));transform:scaleX(0);transition:transform .35s cubic-bezier(.2,1.4,.4,1);box-shadow:0 0 12px rgba(255,180,60,.7)}
+.tab[aria-selected="true"]::after{transform:scaleX(1)}
+.tab:hover{color:var(--bone)}
+/* Map */
+.mapwrap{position:relative;overflow:hidden;background:linear-gradient(160deg,#0F2140,#0B1830);box-shadow:0 20px 60px rgba(0,0,0,.45),inset 0 0 0 1px rgba(76,201,240,.08)}
+.mapwrap::after{content:"";position:absolute;left:50%;top:50%;width:160%;aspect-ratio:1;translate:-50% -50%;pointer-events:none;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0 300deg,rgba(76,201,240,.0) 300deg,rgba(76,201,240,.16) 355deg,rgba(150,230,255,.35) 360deg);mix-blend-mode:screen}
+.mk .ring,.mk .q{transform-box:fill-box;transform-origin:center}
+.mk .ring{fill:#0B1830;stroke:var(--sky);stroke-width:1.6}
+.mk .q{fill:var(--sky)}
+.mk.found .ring{fill:var(--torch);stroke:#FFE3A6;filter:drop-shadow(0 0 4px rgba(255,180,60,.9))}
+.mk.found .q{fill:#2A1604}
+.mk:hover .ring,.mk:focus .ring{stroke:#fff;stroke-width:2.6}
+.chip{transition:transform .15s,background .2s}.chip:hover{transform:translateY(-1px);border-color:var(--sky)}
+.chip[aria-pressed="true"]{background:linear-gradient(135deg,var(--torch),#FF8A3D);box-shadow:0 0 14px rgba(255,160,50,.5)}
+.legend .dot{background:#0B1830;border-color:var(--sky)}
+/* Tiles */
+.grid{perspective:900px}
+.tile{background:linear-gradient(180deg,var(--cave),#0B172B);transition:transform .25s cubic-bezier(.2,.9,.3,1),box-shadow .25s,border-color .25s;transform-style:preserve-3d;will-change:transform}
+.tile:hover{border-color:var(--torch);box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 22px rgba(255,180,60,.25)}
+.tile::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.22) 45%,transparent 60%);background-size:250% 100%;background-position:150% 0;transition:background-position .7s}
+.tile:hover::before{background-position:-50% 0}
+.tile .ph{transition:transform .5s}.tile:hover .ph{transform:scale(1.06)}
+.tile.legend-t{border-color:transparent;background:linear-gradient(var(--cave),var(--cave)) padding-box,conic-gradient(from var(--ang,0deg),#FFE3A6,var(--orchid),var(--sky),var(--jade),#FFE3A6) border-box;border:2px solid transparent}
+.ra.Common{color:#A9BED2}.ra.Uncommon{color:var(--jade)}.ra.Rare{color:var(--sky);box-shadow:0 0 8px rgba(76,201,240,.35)}
+.ra.Legendary{color:#1A1206;border-color:transparent;background:linear-gradient(90deg,#FFE3A6,var(--torch),var(--orchid),var(--sky),#FFE3A6);background-size:300% 100%}
+.ty{box-shadow:0 1px 0 rgba(0,0,0,.3)}
+/* Panels & buttons */
+.exp,.box{box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.exp{background:linear-gradient(180deg,var(--cave),#0C182C)}
+.exp.done{border-color:var(--torch);box-shadow:0 0 0 1px rgba(255,180,60,.3),0 0 30px rgba(255,180,60,.15)}
+.bar i{background:linear-gradient(90deg,var(--jade),var(--sky));box-shadow:0 0 10px rgba(46,230,166,.5)}
+.btn,.def,.layer,.mini button{transition:transform .15s,box-shadow .2s,border-color .2s,background .2s}
+.btn:hover:not(:disabled),.def:hover:not(:disabled),.layer:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.35)}
+.btn:active:not(:disabled){transform:translateY(0) scale(.97)}
+.btn.go{background:linear-gradient(135deg,var(--torch),#FF7A3D);border-color:transparent;color:#1A0E03;box-shadow:0 0 18px rgba(255,140,40,.35)}
+.layer[aria-pressed="true"],.layer.on{background:linear-gradient(135deg,var(--sky),#3A86FF);color:#04111C;border-color:transparent}
+.toast{background:linear-gradient(135deg,#FFD27A,var(--torch) 40%,#FF7A3D);box-shadow:0 12px 40px rgba(255,120,40,.45),0 0 0 2px rgba(255,255,255,.15) inset}
+/* Dossier */
+.sheet{background:rgba(3,7,14,.6);backdrop-filter:blur(4px)}
+.card{background:linear-gradient(180deg,#112340,var(--cave) 240px);border-left:1px solid rgba(76,201,240,.25);box-shadow:-30px 0 80px rgba(0,0,0,.6)}
+.hero{box-shadow:0 14px 40px rgba(0,0,0,.5)}
+/* Discovery stamp */
+.stamp{position:fixed;left:50%;top:42%;z-index:61;pointer-events:none;translate:-50% -50%;text-align:center;font-family:var(--f-display);color:#FFE3A6;text-shadow:0 0 30px rgba(255,150,40,.9),0 4px 0 #7A3A0A}
+.stamp b{display:block;font-size:clamp(34px,10vw,72px);font-weight:400;line-height:1;letter-spacing:.02em}
+.stamp span{display:block;font-family:var(--f-label);font-weight:700;font-size:clamp(16px,4vw,22px);letter-spacing:.2em;text-transform:uppercase;color:#fff;margin-top:8px}
+.stamp.bad{color:#FFB09A;text-shadow:0 0 30px rgba(255,80,40,.9),0 4px 0 #5A1004}
+@media (prefers-reduced-motion:no-preference){
+  h1{animation:shimmer 6s linear infinite}@keyframes shimmer{to{background-position:-250% 0}}
+  h1 .flame .f1{animation:flick 1.1s ease-in-out infinite alternate;transform-origin:50% 100%}
+  h1 .flame .f2{animation:flick 0.8s ease-in-out infinite alternate-reverse;transform-origin:50% 100%}
+  @keyframes flick{0%{transform:scale(1,1) skewX(0)}50%{transform:scale(.92,1.08) skewX(3deg)}100%{transform:scale(1.04,.94) skewX(-3deg)}}
+  .kicker svg .needle{animation:needle 7s ease-in-out infinite}@keyframes needle{0%,100%{transform:rotate(-20deg)}40%{transform:rotate(35deg)}70%{transform:rotate(5deg)}}
+  .xp i::after{animation:stripes 1.2s linear infinite}@keyframes stripes{to{background-position:36px 0}}
+  .plus{animation:plusup 1.4s ease-out forwards}@keyframes plusup{0%{opacity:0;transform:translateY(10px) scale(.6)}20%{opacity:1;transform:translateY(-6px) scale(1.15)}100%{opacity:0;transform:translateY(-38px) scale(1)}}
+  .tally.bump .coin{animation:coinflip .7s}@keyframes coinflip{50%{transform:rotateY(180deg) scale(1.4)}}
+  .mapwrap::after{animation:sweep 7s linear infinite}@keyframes sweep{to{rotate:360deg}}
+  .mk:not(.found) .ring{animation:bob 2.6s ease-in-out infinite;animation-delay:calc(var(--d,0) * -1s)}
+  .mk:not(.found) .q{animation:bob 2.6s ease-in-out infinite;animation-delay:calc(var(--d,0) * -1s)}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+  .mk.found .ring{animation:glow 3s ease-in-out infinite;animation-delay:calc(var(--d,0) * -1s)}
+  @keyframes glow{50%{filter:drop-shadow(0 0 9px rgba(255,190,80,1))}}
+  #map.intro .mk{animation:popin .55s cubic-bezier(.2,1.6,.4,1) both;animation-delay:calc(var(--d,0) * .5s)}
+  @keyframes popin{from{opacity:0}to{opacity:1}}
+  #map.intro .mk .ring{animation:pop2 .55s cubic-bezier(.2,1.6,.4,1) both;animation-delay:calc(var(--d,0) * .5s)}
+  @keyframes pop2{from{transform:scale(0)}to{transform:scale(1)}}
+  .panel-in{animation:panelin .45s cubic-bezier(.2,.9,.3,1)}@keyframes panelin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .grid.enter .tile{animation:rise .55s cubic-bezier(.2,.9,.3,1) both;animation-delay:calc(var(--i,0) * 35ms)}
+  @keyframes rise{from{opacity:0;transform:translateY(24px) rotateX(18deg)}to{opacity:1;transform:none}}
+  .exps-in .exp{animation:rise .5s cubic-bezier(.2,.9,.3,1) both}.exps-in .exp:nth-child(2){animation-delay:.05s}.exps-in .exp:nth-child(3){animation-delay:.1s}.exps-in .exp:nth-child(4){animation-delay:.15s}.exps-in .exp:nth-child(n+5){animation-delay:.2s}
+  .tile.legend-t{animation:spinang 4s linear infinite}
+  @property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}@keyframes spinang{to{--ang:360deg}}
+  .ra.Legendary{animation:holo 3s linear infinite}@keyframes holo{to{background-position:-300% 0}}
+  .sheet:not([hidden]){animation:fadein .25s}@keyframes fadein{from{opacity:0}}
+  .sheet:not([hidden]) .card{animation:slidein .5s cubic-bezier(.2,1.15,.35,1)}@keyframes slidein{from{transform:translateX(70px);opacity:0}}
+  .hero img:not(.tiny){animation:kenburns 20s ease-in-out infinite alternate}@keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.07) translate(-1%,-1%)}}
+  .stamp{animation:stamp 1.9s cubic-bezier(.2,1.5,.4,1) forwards}@keyframes stamp{0%{opacity:0;transform:scale(2.6) rotate(-14deg)}18%{opacity:1;transform:scale(.95) rotate(-6deg)}26%{transform:scale(1.02) rotate(-6deg)}80%{opacity:1;transform:scale(1) rotate(-6deg)}100%{opacity:0;transform:scale(1.1) rotate(-6deg) translateY(-20px)}}
+  .shake{animation:shake .6s}@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
+  .rogue b{animation:neon 4s infinite}@keyframes neon{0%,18%,22%,25%,53%,57%,100%{opacity:1}20%,24%,55%{opacity:.35}}
+  .alert{animation:alertglow 2.4s ease-in-out infinite}@keyframes alertglow{50%{box-shadow:0 0 26px rgba(255,94,58,.35)}}
+  .toast{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:translate(-50%,30px) scale(.8);opacity:0}to{transform:translate(-50%,0) scale(1);opacity:1}}
+}
+
+/* ===== Accounts ===== */
+.hbtns{display:flex;gap:6px}
+#acct.in{color:var(--bone);border-color:var(--jade);max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.introlink{background:none;border:0;color:var(--dust);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:15px;padding:4px}
+.introlink:hover{color:var(--bone)}
+.authcard{padding:22px;max-width:520px}
+.authcard h2{font-family:var(--f-display);font-weight:400;font-size:30px;margin:0 0 6px;color:var(--torch)}
+.autabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--night);border:1px solid var(--line);border-radius:12px;padding:4px;margin:16px 0}
+.autabs button{border:0;background:none;border-radius:9px;padding:9px 6px;font-family:var(--f-label);font-weight:600;letter-spacing:.06em;font-size:16px;color:var(--dust);cursor:pointer}
+.autabs button[aria-selected="true"]{background:var(--rock);color:var(--bone)}
+.fld{display:grid;gap:4px;margin-bottom:12px}
+.fld span{font-family:var(--f-label);font-weight:600;letter-spacing:.06em;font-size:15px}.fld small{color:var(--dust);font-weight:500;letter-spacing:0}
+.fld input{font:inherit;font-size:16px;color:var(--bone);background:var(--night);border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
+.fld input:focus{border-color:var(--sky);outline:none;box-shadow:0 0 0 3px rgba(76,201,240,.2)}
+.btn.big{width:100%;padding:13px;font-size:19px}
+.btn.google{width:100%;display:flex;gap:10px;justify-content:center;align-items:center;background:#fff;color:#1F1F1F;border-color:#fff;margin-bottom:14px;padding:11px}
+.btn.google svg{width:20px;height:20px}
+.ok{color:var(--jade)}.err{color:#FF8A5E}
+
+/* ===== Landing ===== */
+.alert.dormant{background:linear-gradient(90deg,rgba(199,125,255,.16),rgba(199,125,255,.03));border-color:rgba(199,125,255,.5);animation:none}
+.alert.dormant .sleep{color:#D9B3FF}
+.eye{width:22px;height:12px;border-radius:50%;background:radial-gradient(circle,#1A0A2A 30%,#D9B3FF 32% 45%,transparent 47%),#C77DFF;box-shadow:0 0 12px rgba(199,125,255,.8);flex:none}
+@media (prefers-reduced-motion:no-preference){.eye{animation:blink 5s infinite}@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}}
+body{margin:0}
+.live{white-space:nowrap;font-size:clamp(11px,3.3vw,14px)}
+.intro{position:relative;z-index:2;min-height:100svh;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));display:grid;place-items:center;text-align:center;overflow:hidden;padding:32px 20px 70px}
+.slides{position:absolute;inset:0;z-index:-1;background:#050B16}
+.slides img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;filter:grayscale(1) contrast(1.15) brightness(.8);transition:opacity 1.6s}
+.slides img.on{opacity:.55}
+.slides::after{content:"";position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(8,17,31,.35),rgba(8,17,31,.2) 40%,var(--night) 98%),
+  linear-gradient(135deg,rgba(199,125,255,.45),rgba(76,201,240,.25) 45%,rgba(255,140,50,.4));mix-blend-mode:normal}
+.intro-in{display:grid;justify-items:center;gap:18px;max-width:640px}
+.live{display:inline-flex;gap:10px;align-items:center;background:rgba(255,94,58,.16);border:1px solid rgba(255,94,58,.6);border-radius:99px;padding:6px 14px;font-family:var(--f-label);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:14px;color:#FFB09A;backdrop-filter:blur(6px)}
+.big{font-family:var(--f-display);font-weight:400;margin:0;font-size:clamp(76px,24vw,180px);line-height:.9;display:flex;align-items:flex-end;gap:.05em;
+  background:linear-gradient(100deg,#FFE3A6 0%,var(--torch) 30%,#FF7A3D 50%,var(--torch) 70%,#FFE3A6 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 30px rgba(255,140,40,.45))}
+.flame.xl{width:.55em;height:.68em;margin-bottom:.12em}
+.hook{margin:0;font-size:clamp(19px,5vw,26px);line-height:1.35;color:var(--bone);text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.hook em{font-style:normal;color:var(--torch);font-weight:700}
+.cta{border:0;cursor:pointer;font-family:var(--f-display);font-size:clamp(22px,6vw,28px);padding:16px 38px;border-radius:99px;color:#1A0E03;
+  background:linear-gradient(135deg,#FFE3A6,var(--torch) 40%,#FF6A3D);box-shadow:0 0 0 0 rgba(255,160,50,.6),0 14px 40px rgba(255,110,40,.45);transition:transform .2s}
+.cta:hover{transform:translateY(-3px) scale(1.03)}.cta:active{transform:scale(.97)}
+.who{margin:-6px 0 0;font-family:var(--f-label);letter-spacing:.1em;text-transform:uppercase;font-size:14px;color:var(--dust);min-height:1em}
+.three{list-style:none;padding:0;margin:8px 0 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.three li{background:rgba(15,29,51,.6);border:1px solid rgba(76,201,240,.3);border-radius:12px;padding:8px 14px;font-size:14px;color:var(--dust);backdrop-filter:blur(6px)}
+.three b{display:block;font-family:var(--f-label);font-size:18px;letter-spacing:.1em;text-transform:uppercase;color:var(--bone)}
+.three li:nth-child(1) b{color:var(--sky)}.three li:nth-child(2) b{color:var(--jade)}.three li:nth-child(3) b{color:#FF8A5E}
+.scroll{position:absolute;bottom:22px;left:50%;width:22px;height:34px;margin-left:-11px;border:2px solid rgba(244,238,223,.5);border-radius:12px}
+.scroll::after{content:"";position:absolute;left:50%;top:6px;width:4px;height:7px;margin-left:-2px;border-radius:2px;background:var(--bone)}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.brand h1{font-size:clamp(30px,8vw,40px)}
+.howbtn{border:1px solid var(--line);background:rgba(15,29,51,.7);border-radius:99px;padding:6px 14px;font-family:var(--f-label);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:14px;color:var(--dust);cursor:pointer}
+.howbtn:hover{color:var(--bone);border-color:var(--sky)}
+.top{padding-block:18px 6px}
+.howcard{padding:22px}.howcard h2{font-family:var(--f-display);font-weight:400;font-size:32px;margin:0 0 12px;color:var(--torch)}
+.steps{padding-left:22px;display:grid;gap:12px}.steps b{color:var(--bone)}.steps li{color:var(--dust)}.steps li::marker{font-family:var(--f-display);color:var(--torch)}
+@media (prefers-reduced-motion:no-preference){
+  .big{animation:shimmer 6s linear infinite}
+  .slides img.on{animation:kenburns 9s ease-out both}
+  .cta{animation:ctapulse 2.2s ease-in-out infinite}@keyframes ctapulse{0%,100%{box-shadow:0 0 0 0 rgba(255,160,50,.55),0 14px 40px rgba(255,110,40,.45)}60%{box-shadow:0 0 0 18px rgba(255,160,50,0),0 14px 40px rgba(255,110,40,.45)}}
+  .intro-in>*{animation:rise .8s cubic-bezier(.2,.9,.3,1) both}.intro-in>:nth-child(2){animation-delay:.12s}.intro-in>:nth-child(3){animation-delay:.3s}.intro-in>:nth-child(4){animation-delay:.5s}.intro-in>:nth-child(5){animation-delay:.6s}.intro-in>:nth-child(6){animation-delay:.75s}
+  .scroll::after{animation:wheel 1.6s ease-in-out infinite}@keyframes wheel{0%{opacity:0;transform:translateY(0)}30%{opacity:1}100%{opacity:0;transform:translateY(12px)}}
+}
+
+.tip{position:fixed;z-index:30;pointer-events:none;background:var(--bone);color:var(--night);font-size:13px;font-weight:600;padding:6px 9px;border-radius:6px;max-width:240px}
+footer{margin-top:40px;font-size:13px;color:var(--dust);max-width:75ch}
+footer p{margin:0 0 8px}
+</style>
+</head>
+<body>
+
+<canvas id="fx" aria-hidden="true"></canvas><canvas id="burst" aria-hidden="true"></canvas>
+<section class="intro" id="intro" aria-label="Welcome">
+  <div class="slides" aria-hidden="true"></div>
+  <div class="intro-in">
+    <div class="live" id="introlive"><span class="siren"></span><span>The Syndicate is watching</span></div>
+    <h2 class="big"><svg class="flame xl" viewBox="0 0 24 28" aria-hidden="true"><path class="f1" d="M12 1c1 5 7 8 7 15a7 7 0 0 1-14 0c0-4 2-6 3-9 1 3 2 4 3 4-1-4 0-7 1-10z" fill="#FF7A3D"/><path class="f2" d="M12 10c.6 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3.5 2-5 .5 1.5 1 2 2 2-.5-2 0-4 0-6z" fill="#FFE3A6"/></svg><span>bVille</span></h2>
+    <p class="hook">78 historic sites are hiding in plain sight.<br><em>Find them before the bulldozers do.</em></p>
+    <button class="cta" id="start" type="button">Start the hunt</button>
+    <button class="introlink" id="introsign" type="button" data-auth="login">Already exploring? Sign in</button>
+    <p class="who" id="introwho"></p>
+    <ul class="three"><li><b>Crack</b>the riddle</li><li><b>Dig</b>through time</li><li><b>Defend</b>the town</li></ul>
+  </div>
+  <div class="scroll" aria-hidden="true"></div>
+</section>
+<div class="sheet" id="authsheet" hidden><div class="card authcard" role="dialog" aria-modal="true" aria-labelledby="au-h">
+  <button class="btn" id="aux" type="button" style="float:right">Close</button>
+  <div id="auin">
+    <h2 id="au-h">Join the expedition</h2>
+    <p class="hint" id="au-sub">Save your finds and Marthas on any phone, post photos and compete on the Martha Board.</p>
+    <div class="autabs" role="tablist"><button type="button" role="tab" data-m="signup" aria-selected="true">New explorer</button><button type="button" role="tab" data-m="login" aria-selected="false">I have an account</button></div>
+    <button class="btn google" id="au-google" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.1 14.6 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.6-4.1 9.6-9.8 0-.7-.1-1.2-.2-1.7H12z"/></svg>Continue with Google</button>
+    <form id="au-form" novalidate>
+      <label class="fld" id="au-namef"><span>Explorer name <small>(shown on the Martha Board)</small></span><input id="au-name" autocomplete="nickname" maxlength="40" placeholder="e.g. Paul R."></label>
+      <label class="fld"><span>Email <small>(never shown to other players)</small></span><input id="au-email" type="email" autocomplete="email" required></label>
+      <label class="fld" id="au-pwf"><span>Password</span><input id="au-pw" type="password" autocomplete="new-password" minlength="8" required></label>
+      <button class="btn go big" id="au-go" type="submit">Join the expedition</button>
+      <p class="verdict" id="au-msg" aria-live="polite"></p>
+      <button class="introlink" id="au-forgot" type="button" hidden>Forgot your password?</button>
+    </form>
+  </div>
+  <div id="auout" hidden>
+    <h2>Your expedition</h2>
+    <p class="story">Signed in as <strong id="au-who"></strong>. Your progress is saved to bVille’s server, so it follows you to any phone or computer.</p>
+    <label class="fld"><span>Explorer name</span><input id="au-rename" maxlength="40"></label>
+    <div class="row2"><button class="btn" id="au-savename" type="button">Save name</button><button class="btn" id="au-out" type="button">Sign out</button></div>
+    <p class="verdict" id="au-msg2" aria-live="polite"></p>
+  </div>
+  <div id="aureset" hidden>
+    <h2>Choose a new password</h2>
+    <label class="fld"><span>New password</span><input id="au-newpw" type="password" autocomplete="new-password" minlength="8"></label>
+    <div class="row2"><button class="btn go" id="au-setpw" type="button">Save password</button></div>
+    <p class="verdict" id="au-msg3" aria-live="polite"></p>
+  </div>
+</div></div>
+<div class="sheet" id="howsheet" hidden><div class="card howcard"><button class="btn" id="howx" type="button" style="float:right">Close</button>
+  <h2>How to play</h2>
+  <ol class="steps"><li><b>Pick a ? on the map.</b> Each one is a riddle about a real historic site in Birmingham.</li>
+  <li><b>Go find it.</b> Answer a question only someone standing there could answer, or check in.</li>
+  <li><b>Dig through the layers.</b> 1969 archive photo, the 2001 survey, then today, which you photograph yourself.</li>
+  <li><b>Earn Marthas.</b> Named for Martha Baldwin. Climb from Newcomer to Living Landmark on the Martha Board.</li>
+  <li><b>Stop the Syndicate.</b> Once five explorers join, developers start targeting sites each week, more as the crowd grows. Defend them, or watch a car wash move in.</li></ol>
+  <p class="hint">Most sites are private homes. Please enjoy them from the sidewalk.</p></div></div>
+<div class="wrap" id="app">
+  <header class="top">
+    <div class="brand"><h1><svg class="flame" viewBox="0 0 24 28" aria-hidden="true"><path class="f1" d="M12 1c1 5 7 8 7 15a7 7 0 0 1-14 0c0-4 2-6 3-9 1 3 2 4 3 4-1-4 0-7 1-10z" fill="#FF7A3D"/><path class="f2" d="M12 10c.6 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3.5 2-5 .5 1.5 1 2 2 2-.5-2 0-4 0-6z" fill="#FFE3A6"/></svg><span>bVille</span></h1><span class="hbtns"><button class="howbtn" id="acct" type="button">Sign in</button><button class="howbtn" id="how" type="button" aria-label="How to play">How?</button></span></div>
+    <div class="rankbar" aria-live="polite">
+      <div class="rank" id="rank">Newcomer<small>Rank</small></div>
+      <div class="xp" title="Experience"><i id="xpbar" style="width:0%"></i></div>
+      <div class="tally"><b id="found">0</b> / 78 found · <span class="coin">M</span> <span id="xptext">0</span></div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="map" aria-selected="true">Map</button>
+    <button class="tab" role="tab" data-tab="journal" aria-selected="false">Journal</button>
+    <button class="tab" role="tab" data-tab="exp" aria-selected="false">Quests</button>
+    <button class="tab" role="tab" data-tab="board" aria-selected="false">Marthas</button>
+  </nav>
+
+  <section id="p-map">
+    <div class="alert" id="alert" aria-live="polite"></div>
+    <div class="mapwrap">
+      <div class="zooms" role="group" aria-label="Map area"></div>
+      <svg id="map" viewBox="0 0 400 420" role="img" aria-label="Expedition map of Birmingham with hidden sites"></svg>
+      <div class="legend"><span><i class="dot"></i>Rumored site</span><span><i class="dot f"></i>Discovered</span><span>Street lines approximate</span></div>
+    </div>
+  </section>
+  <section id="p-journal" hidden>
+    <div class="filters" id="filters"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+  <section id="p-exp" hidden><div class="exps" id="exps"></div></section>
+  <section id="p-board" hidden>
+    <div class="boardhead"><span class="coin big">M</span><div><h3 class="bh">The Martha Board</h3><p class="hint">Explorers earn Marthas, named for Martha Baldwin: her name is on the library, and she rests in Greenwood Cemetery. Find sites, solve field tests, date your finds, excavate Layer 3 with today’s photos and recover relics to climb the board.</p></div></div>
+    <div id="me" class="mecard"></div>
+    <ol class="board" id="board"></ol>
+  </section>
+
+  <footer>
+    <p><strong>Please be respectful.</strong> Most sites are private homes. Look from the sidewalk and don’t go onto the property.</p>
+    <p><strong>Sources.</strong> Histories and build years from the 2001 Birmingham virtual-tour files (City of Birmingham historic-district reports; <em>Present Past in Birmingham</em>, 1969, text by Billie Pierno and Judy Shumway) and the City of Birmingham’s designated historic districts list. Greenwood Cemetery: City of Birmingham and Michigan historical marker L1832. Photos: Present Past (1969), archival scans, and 2000–01 surveys by the virtual-tour volunteers. Map positions: U.S. Census geocoder, some estimated.</p>
+  </footer>
+</div>
+
+<div class="sheet" id="sheet" hidden><article class="card" id="card" role="dialog" aria-modal="true" aria-labelledby="d-name"></article></div>
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="identity.js"></script>
+<script src="net.js"></script>
+<script>
+const DATA = {"sites": [{"tour": "downtown", "id": "downtown-ford", "sid": "ford", "name": "Ford Building", "addr": "101 N. Old Woodward & 120 W. Maple", "year": 1895, "yearLabel": "1895", "lat": 42.5468, "lon": -83.2147, "archive": [], "photos": [["downtown/img2/8-ford-135-nw-stitch", "The corner at Maple and Old Woodward", "May 2001"], ["downtown/img2/8-ford-135nw-stitch2", "Second stitched view", "May 2001"], ["downtown/img2/8-ford-detail-1", "Detail: the carved parapet crest", "May 2001"], ["downtown/img2/8-ford-detail2", "Detail: rosettes and pilaster capitals", "May 2001"]], "notes": "Start at the main corner. A pale limestone block with a carved crest at the parapet, a frieze of round medallions, and fluted pilasters with stylized capitals running up the corners. In 2001: Corner storefronts.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "Look at the top of the corner pilasters. What round ornaments run along the frieze?", "opts": ["Carved rosettes", "Lion heads", "Shields"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Uncommon", "street": "Maple & Old Woodward", "clue": "Rosettes and a carved crest on the most important corner in town."}, {"tour": "downtown", "id": "downtown-billymcbride", "sid": "billymcbride", "name": "Billy McBride Building", "addr": "122 W. Maple", "year": 1925, "yearLabel": "1925", "lat": 42.54673, "lon": -83.21505, "archive": [], "photos": [["downtown/img/122-w-maple-billy-mcbride", "Street view", "July 2001"]], "notes": "Two stories of red brick with soldier-course banding and paired sash windows over a wood storefront. In 2001: Frankie & Debbie's; Birmingham Bloomfield Chamber at No. 124.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "W. Maple", "clue": ""}, {"tour": "downtown", "id": "downtown-blakeslee", "sid": "blakeslee", "name": "Blakeslee Building", "addr": "138 W. Maple", "year": 1880, "yearLabel": "1880", "lat": 42.54673, "lon": -83.2155, "archive": [], "photos": [["downtown/img2/4-blakeslee-138-wmaple", "Storefront", "May 2001"], ["downtown/img/shopkeeper-of-blakeslee-138-w-maple2", "Storefront", "July 2001"], ["downtown/img/shopkeeper-of-blakeslee-138-w-maple", "Shopkeeper with her stock", "July 2001"]], "notes": "A narrow storefront painted bright red in 2001, with carved figures and baskets set out on the step. In 2001: Christy's Artefacts.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Uncommon", "street": "W. Maple", "clue": ""}, {"tour": "downtown", "id": "downtown-quarton", "sid": "quarton", "name": "Quarton Building", "addr": "142 W. Maple", "year": 1916, "yearLabel": "1916", "lat": 42.54673, "lon": -83.21557, "archive": [], "photos": [["downtown/img2/3-quarton-142146-maple", "Street view, with the name in the parapet", "May 2001"], ["downtown/img/shopkeeper-of-quarton-142-146-2001", "Shopkeeper", "July 2001"]], "notes": "Buff brick with white-trimmed openings and a cornice that carries the building's name. The Quarton name runs through Birmingham: Quarton Road and the Quarton Homestead district carry it too. In 2001: Chico's.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "Look up at the parapet. What name is lettered across it?", "opts": ["QUARTON", "QUINTON", "LEONARD"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "W. Maple", "clue": "A farm family’s name, lettered across a parapet on West Maple."}, {"tour": "downtown", "id": "downtown-leonard", "sid": "leonard", "name": "Leonard Building", "addr": "166 W. Maple", "year": 1924, "yearLabel": "1924", "lat": 42.54673, "lon": -83.21599, "archive": [], "photos": [["downtown/img2/2-leonard-bldg-162-w-maple", "Street view", "May 2001"]], "notes": "A small building with a steep gray roof and dormer set between larger neighbors. In 2001: Shop under a red awning.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "W. Maple", "clue": ""}, {"tour": "downtown", "id": "downtown-wabeek", "sid": "wabeek", "name": "Wabeek Building", "addr": "256 W. Maple", "year": 1928, "yearLabel": "1928", "lat": 42.54673, "lon": -83.217, "archive": [], "photos": [["downtown/img2/1-wabeek-256-w-maple-stitch-3", "Stitched panorama of the corner", "May 2001"], ["downtown/img2/1-wabeek-alt1", "From across Maple", "May 2001"], ["downtown/img2/1-wabeek-alt3", "Corner view", "May 2001"], ["downtown/img2/1-wabeek-detail1", "Detail: the arched entry", "May 2001"], ["downtown/img2/1-wabeek-detail2", "Detail: recessed panels at the parapet", "May 2001"]], "notes": "The largest building on the walk: three stories of cream stone and terra-cotta with tall vertical piers, a dark polished base, and an arched entry with its name carved above. In 2001: Ground-floor shops and offices above.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "What name is carved above the arched entry?", "opts": ["WABEEK", "WABASH", "WAHBEEK"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "W. Maple", "clue": "A name carved over an arch on West Maple, atop the largest block on the street since 1928."}, {"tour": "downtown", "id": "downtown-field", "sid": "field", "name": "Field Building", "addr": "135–141 W. Maple", "year": 1920, "yearLabel": "c. 1920", "lat": 42.54661, "lon": -83.21543, "archive": [], "photos": [["downtown/img2/5-field-bldg-137141-w-maple", "Street view", "May 2001"], ["downtown/img/shopkeeper-with-customers-137-141-w-maple", "Shopkeeper with customers", "July 2001"], ["downtown/img/137-141-w-maple-shopkeeper", "The shopkeeper in the doorway", "July 2001"], ["downtown/img/137-141-w-maple-shopkeeper-2", "Sale day", "July 2001"]], "notes": "Buff brick with a sloped green tile roof along the front. In July 2001 the survey caught it as a street scene: a shopkeeper and customers outside a striped-awning antiques store. In 2001: La Belle Provence (European antiques, Pierre Deux, Souleiado).", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "What covers the sloped roof along the front?", "opts": ["Green tile", "Slate", "Copper"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "W. Maple", "clue": ""}, {"tour": "downtown", "id": "downtown-bigelow", "sid": "bigelow", "name": "Bigelow-Shain Building", "addr": "115 W. Maple", "year": 1886, "yearLabel": "c. 1867 / 1886", "lat": 42.54661, "lon": -83.21505, "archive": [], "photos": [["downtown/img2/6b-bigelow-shain-115-w-maple", "Street view", "May 2001"], ["downtown/img2/6a-bigelow-shain-115-w-maple", "The corner", "May 2001"]], "notes": "Two stories of red brick at the corner with a gabled roofline and a continuous green storefront band. In 2001: Florsheim Shoes and Shermans.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Uncommon", "street": "W. Maple", "clue": ""}, {"tour": "downtown", "id": "downtown-wooster", "sid": "wooster", "name": "Wooster & Parks Buildings", "addr": "132–136 & 110–116 N. Old Woodward", "year": 1914, "yearLabel": "Wooster c. 1914 · Parks c. 1889", "lat": 42.54692, "lon": -83.21439, "archive": [], "photos": [["downtown/img/wooster-and-parks-bldgs-132-and-136-n-old-woodward", "Street view", "July 2001"]], "notes": "Two neighbors photographed together. The Wooster name also appears on the Eli Wooster House on Northlawn. In 2001: Relax the Back; Gregory Aerts Architects upstairs.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "N. Old Woodward", "clue": ""}, {"tour": "downtown", "id": "downtown-nbb", "sid": "nbb", "name": "National Bank Building", "addr": "152–176 N. Old Woodward", "year": 1919, "yearLabel": "1919", "lat": 42.5472, "lon": -83.2147, "archive": [], "photos": [["downtown/img2/14-152-172-n-w-nbb", "Street view", "May 2001"]], "notes": "A long red-brick front with a row of round-arched windows across the second floor. In 2001: Ground-floor shops.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "What shape are the second-floor windows?", "opts": ["Round-arched", "Square", "Pointed Gothic"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "N. Old Woodward", "clue": ""}, {"tour": "downtown", "id": "downtown-erity", "sid": "erity", "name": "Erity and Nixon Building", "addr": "163–167 N. Old Woodward", "year": 1890, "yearLabel": "c. 1890", "lat": 42.54736, "lon": -83.215, "archive": [], "photos": [["downtown/img/verity-and-nixon-163-167-n-old-woodward", "Street view", "July 2001"], ["downtown/img/verity-and-nixon-detail", "Detail: the name panel", "July 2001"]], "notes": "Red brick with round-arched upper windows. Above the arches, a stone panel carries two names. In 2001: Avenue Gallery (Thomas Kinkade).", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "What names are carved in the stone panel?", "opts": ["Erity & Nixon", "Verity & Nixon", "Erie & Dixon"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Uncommon", "street": "N. Old Woodward", "clue": "Two partners, one stone panel, above round brick arches north of Maple."}, {"tour": "downtown", "id": "downtown-bell", "sid": "bell", "name": "Bell Building", "addr": "191 N. Old Woodward", "year": 1915, "yearLabel": "1915", "lat": 42.54744, "lon": -83.21508, "archive": [], "photos": [["downtown/img/bell-bldg-191-n-old-woodward", "Street view", "July 2001"]], "notes": "In 2001 the upper floor wore a pale stone-panel front with a single band of windows. In 2001: Peking West Mongolian Barbeque; Ninth Floor Salon.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "N. Old Woodward", "clue": ""}, {"tour": "downtown", "id": "downtown-schlaack", "sid": "schlaack", "name": "Schlaack & Huston (1916) Buildings", "addr": "205–219 N. Old Woodward", "year": 1890, "yearLabel": "Schlaack c. 1890 · Huston 1916", "lat": 42.54748, "lon": -83.21512, "archive": [], "photos": [["downtown/img/205-n-woodward-schlaack", "No. 205", "July 2001"], ["downtown/img2/12-huston-hardware", "Huston Hardware", "May 2001"], ["downtown/img/shopkeeper-205-n-woodward-schlaack3", "Shopkeeper at No. 205", "July 2001"], ["downtown/img/inside-ceiling-detail-209-n-woodward-huston", "Inside No. 209: pressed-tin ceiling", "July 2001"]], "notes": "Rusticated rose-and-gray stone, a dentil course under the parapet, and leaded transoms over an oak storefront. Next door, the 1916 Huston Building kept its pressed-tin ceiling. In 2001: Cristions Fine Linen & Down; Huston Hardware.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "How many arched windows are on the second floor of No. 205?", "opts": ["Two", "Three", "Four"], "a": 1}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Uncommon", "street": "N. Old Woodward", "clue": "Three arched windows above, a pressed-tin ceiling within, on North Old Woodward."}, {"tour": "downtown", "id": "downtown-huston1923", "sid": "huston1923", "name": "Huston Building (1923)", "addr": "237–243 N. Old Woodward", "year": 1923, "yearLabel": "1923", "lat": 42.5478, "lon": -83.2154, "archive": [], "photos": [["downtown/img2/13-huston-building-237-243-nw", "Street view", "May 2001"]], "notes": "The second Huston building, seven years younger than the one you just passed. End of the West & North loop. In 2001: Ground-floor shops.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "N. Old Woodward", "clue": ""}, {"tour": "downtown", "id": "downtown-briggs", "sid": "briggs", "name": "Briggs Building", "addr": "111 S. Old Woodward", "year": 1929, "yearLabel": "1929", "lat": 42.5465, "lon": -83.2146, "archive": [], "photos": [["downtown/img2/20-briggs-stitched", "Stitched view of the corner", "May 2001"], ["downtown/img2/20-briggs-111-sw", "The corner", "May 2001"], ["downtown/img2/20-briggs-111sw-alt3", "From across the intersection", "May 2001"], ["downtown/img2/20-briggs-detail1", "Detail: the corner pediment", "May 2001"], ["downtown/img2/20-briggs-111sw-detail2", "Detail: carved lintel ornament", "May 2001"], ["downtown/img2/20-briggs-111sw-detail3", "Detail: window surround", "May 2001"]], "notes": "Start at the opposite corner. Two stories with a stone upper floor over a brick ground floor of round arches. Above the corner entry, a small pediment breaks the cornice. In 2001: Shops behind an arcade of round-arched openings.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "What carved form tops the corner pediment?", "opts": ["A pair of curled scrolls", "A shield", "An eagle"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "S. Old Woodward", "clue": "A pair of stone scrolls crowns the corner opposite the main crossing."}, {"tour": "downtown", "id": "downtown-oneal", "sid": "oneal", "name": "O'Neal Building", "addr": "106–110 S. Old Woodward", "year": 1900, "yearLabel": "c. 1900", "lat": 42.54652, "lon": -83.21421, "archive": [], "photos": [["downtown/img/oneil-building-112-s-woodward", "Street view", "July 2001"], ["downtown/img/oneal-detail", "Detail: the nameplate", "July 2001"]], "notes": "Brick laid in vertical bands, stone wedge keystones fanning over the windows, and a stone nameplate at the top. In 2001: Birmingham Computer.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "What name is carved above the second-floor windows?", "opts": ["O'NEAL", "O'NEIL", "NEALE"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "S. Old Woodward", "clue": "A family name set in stone above stepped keystones, on the south side of the main corner."}, {"tour": "downtown", "id": "downtown-johnstonshaw", "sid": "johnstonshaw", "name": "Johnston-Shaw Building", "addr": "112–114 S. Old Woodward", "year": 1905, "yearLabel": "1905", "lat": 42.54646, "lon": -83.21417, "archive": [], "photos": [["downtown/img/jonston-and-shaw-2001-116-s-woodward", "Street view", "July 2001"], ["downtown/img/sohnston-and-shaw-116-s-woodward-detail", "Detail: the initials panel", "July 2001"]], "notes": "Dark brick with stepped stone keystones over the windows. A carved stone panel carries two initials with a date between them. In 2001: Jennifer Convertibles and Caribou Coffee.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "Find the carved panel. Which two initials flank it?", "opts": ["J. and S.", "O. and N.", "E. and N."], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "S. Old Woodward", "clue": "Two initials and a year, 1905, carved where J meets S."}, {"tour": "downtown", "id": "downtown-mcbride", "sid": "mcbride", "name": "McBride Building & D.U.R. Waiting Room", "addr": "124–128 & 138 S. Old Woodward", "year": 1920, "yearLabel": "McBride c. 1920 · D.U.R. 1910", "lat": 42.54638, "lon": -83.21407, "archive": [], "photos": [["downtown/img/mcbride-and-dur-together-126-128-and-132-s-woodward", "McBride and D.U.R. together", "July 2001"], ["downtown/img2/24-dur-bldg", "The D.U.R. building", "May 2001"], ["downtown/img/126-128-s-woodward-mcbride", "McBride Building façade", "July 2001"], ["downtown/img/dur-detail", "Detail: cornice and ornament band", "July 2001"]], "notes": "The D.U.R. was the Detroit United Railway, the interurban line that ran up Woodward. Look up: the cream brick façade carries a molded cornice and a running ornament band between the floors. In 2001: TD Waterhouse, Olga's Kitchen, “Shops at the Top”.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "Look between the first and second floors. What runs across the façade?", "opts": ["A band of molded rosettes and scrolls", "A row of carved faces", "A plain steel lintel"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "S. Old Woodward", "clue": "Where interurban riders once waited for the Detroit United Railway."}, {"tour": "downtown", "id": "downtown-theater", "sid": "theater", "name": "Birmingham Theater Building", "addr": "211 S. Old Woodward", "year": 1927, "yearLabel": "1927", "lat": 42.5455, "lon": -83.214, "archive": [["downtown/img3/theater-1969", "Birmingham Theater", "1969 · Present Past in Birmingham"]], "photos": [["downtown/img2/25-bham-theatre-detail3", "The marquee", "May 2001"], ["downtown/img2/25-bham-theatre", "The block along Old Woodward", "May 2001"], ["downtown/img2/25-bham-theatre-detail", "Detail: patterned panel", "May 2001"], ["downtown/img2/25-bham-theatre-detail2", "Detail: arch and tile", "May 2001"]], "notes": "Buff brick with ornamental tile panels and patterned arches. The marquee in this May 2001 photo advertises Shrek, Angel Eyes, Moulin Rouge and Pearl Harbor, which is how we can date the survey. In 2001: Birmingham Theatre (movies).", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "Above the marquee, what shape are the three tall windows?", "opts": ["Arched", "Round portholes", "Square"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "S. Old Woodward", "clue": "In 2001 its marquee announced a green ogre and Pearl Harbor."}, {"tour": "downtown", "id": "downtown-fordpeabody", "sid": "fordpeabody", "name": "Ford-Peabody Mansion", "addr": "325 S. Old Woodward", "year": 1878, "yearLabel": "1878", "lat": 42.5445, "lon": -83.2138, "archive": [["downtown/img3/fp-arch", "Frank Ford House, Woodward Avenue (archive postcard)", "Archive"], ["downtown/img3/fp-1969", "Ford Mansion", "1969 · Present Past in Birmingham"]], "photos": [["downtown/img2/26-ford-peabody-house", "Street view", "May 2001"], ["downtown/img2/26-ford-peabody-house-alt1", "The porch and tower", "May 2001"], ["downtown/img2/26-ford-peabody-detail-tower", "Detail: the tower", "May 2001"], ["downtown/img2/26-ford-peabody-detail2", "Detail: brackets and balcony", "May 2001"], ["downtown/img2/26-ford-peabody-detail3", "Detail: carved window hoods", "May 2001"]], "notes": "Built in 1878 by banker Frank Ford for $4,000, later the home of his son-in-law J. Bert Peabody. The Masonic Temple Association bought it in 1918, and it was the Masons’ lodge until 1964. Then Jack Myland, owner of Jax Kar Wash, bought it; he was persuaded to preserve it and rented it to photographer Fred Reynolds, whose 1968 renovation raised its value. Second Empire style: a slate mansard roof and tower, paired brackets, carved window hoods and a columned porch.", "src": "Present Past in Birmingham (1969); 2001 virtual tour", "style": "", "q": {"text": "What roof form covers the house and its tower?", "opts": ["Mansard", "Gambrel", "Flat"], "a": 0}, "lost": false, "puzzle": "", "type": "Second Empire", "rarity": "Uncommon", "street": "S. Old Woodward", "clue": "A banker’s 1878 mansion with a tower; later a Masonic lodge, then a car-wash owner’s prize."}, {"tour": "downtown", "id": "downtown-edison", "sid": "edison", "name": "Detroit Edison Building", "addr": "220 E. Merrill", "year": 1932, "yearLabel": "1932", "lat": 42.5452, "lon": -83.213, "archive": [], "photos": [["downtown/img2/27-edison-panorama", "Panorama along Merrill", "May 2001"], ["downtown/img2/27-edison-bldg-option-2", "Street view", "May 2001"], ["downtown/img2/27-edison-building", "The front", "May 2001"], ["downtown/img2/27-edison-detail2", "Detail: gable and entry", "May 2001"], ["downtown/img2/27-edison-gutter-detail", "Detail: the downspout", "May 2001"]], "notes": "Tudor Revival brick under a steep slate roof, with tall gables, a long band of grouped windows, and an ornamental downspout worth finding. In 2001: Shops under striped awnings.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "What material covers the steep roof?", "opts": ["Slate", "Green tile", "Copper"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "E. Merrill", "clue": ""}, {"tour": "downtown", "id": "downtown-municipal", "sid": "municipal", "name": "Municipal Building", "addr": "151 Martin St.", "year": 1928, "yearLabel": "1928", "lat": 42.54587, "lon": -83.2155, "archive": [["downtown/img3/municipal-1969", "Municipal Building and the Civil War monument", "1969 · Present Past in Birmingham"], ["downtown/img3/shainpark-1969", "Shain Park", "1969 · Present Past in Birmingham"], ["downtown/img3/monument-1969", "Civil War Soldiers Monument", "1969 · Present Past in Birmingham"]], "photos": [["downtown/img/city-hall-alt-1", "Municipal Building from Shain Park", "July 2001"], ["downtown/img/city-hall-2", "Across the park lawn and monument", "July 2001"], ["downtown/img/city-hall-alt-3", "Front steps and entry", "July 2001"]], "notes": "The Municipal Building anchors the Shain Park Historic District. Brick and limestone, a slate hip roof, and a central arched entry face the park lawn and its monument. In 2001: City Hall, facing Shain Park. The park was named in 1951 for Village President Charles J. Shain; its boulder plaque (1952) is by sculptor Marshall Fredericks. Voters defeated a 1955 plan to move the park for parking. Hugh Irving, who named Birmingham, led the fundraising for the Civil War monument on the lawn.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "What street number is posted at the main entry?", "opts": ["115", "151", "215"], "a": 1}, "lost": false, "puzzle": "", "type": "Civic", "rarity": "Common", "street": "Martin St.", "clue": "The town’s own house, facing a park named for a village president."}, {"tour": "downtown", "id": "downtown-telephone", "sid": "telephone", "name": "Telephone Exchange Building", "addr": "148 Pierce St.", "year": 1909, "yearLabel": "1909", "lat": 42.54632, "lon": -83.21503, "archive": [["downtown/img3/pierce-1969", "Pierce Street", "1969 · Present Past in Birmingham"]], "photos": [["downtown/img/telephone-exchange3-2001-alt-4", "Corner view", "July 2001"], ["downtown/img/telephone-exchange2-2001-alt-2", "Looking along Pierce", "July 2001"], ["downtown/img/telephone-exchange-2001-alt-1", "Front elevation", "July 2001"]], "notes": "A two-story red-brick block with stone sills and a painted wood storefront. In 2001 the storefront was cobalt blue with a chartreuse door. In 2001: Gibbs Planning Group (town planning, landscape architecture).", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "Find the street number beside the door. What is it?", "opts": ["138", "148", "184"], "a": 1}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "Pierce St.", "clue": "In 1909 the town’s calls were connected here, on Pierce Street."}, {"tour": "downtown", "id": "downtown-stclair", "sid": "stclair", "name": "St. Clair Edison Building", "addr": "135–159 Pierce St.", "year": 1909, "yearLabel": "1909", "lat": 42.54639, "lon": -83.21488, "archive": [], "photos": [["downtown/img/st-clair-edison-135-161-pierce", "Pierce Street frontage", "July 2001"]], "notes": "Colonial Revival red brick with white trim, a row of gabled dormers, and a deep entry porch carried on square columns. In 2001: Shops behind a columned entry porch.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "Pierce St.", "clue": ""}, {"tour": "downtown", "id": "downtown-madison", "sid": "madison", "name": "Madison Building", "addr": "297–323 E. Maple", "year": 1935, "yearLabel": "1935", "lat": 42.5468, "lon": -83.21255, "archive": [], "photos": [["downtown/img2/17-madison-297-323-e-maple-alt2", "Street view", "May 2001"], ["downtown/img2/17-madison-297323-e-maple-alt1", "Looking east", "May 2001"], ["downtown/img2/17-madison-297323-e-maple-detail", "Detail: patterned tile panel", "May 2001"], ["downtown/img/297-323-e-maple-madison", "Street view", "July 2001"]], "notes": "A long one-story commercial row with a stuccoed parapet. At the ends, look for a panel of patterned tile set into the pier. In 2001: Magic Thai and neighboring shops.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "What's set into the brick pier at the end of the row?", "opts": ["A patterned tile panel", "A bronze plaque", "A carved face"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "E. Maple", "clue": ""}, {"tour": "downtown", "id": "downtown-hawthorne", "sid": "hawthorne", "name": "Hawthorne Building", "addr": "361 E. Maple", "year": 1927, "yearLabel": "1927", "lat": 42.5468, "lon": -83.21235, "archive": [], "photos": [["downtown/img/hawthorne-building-361-e-maple", "Street view", "July 2001"], ["downtown/img/hawthorne-detail", "Detail: parapet ornament", "July 2001"], ["downtown/img/hawthorne-detail2", "Detail: the other corner", "July 2001"]], "notes": "A one-story brick storefront with a shaped parapet, stone coping, and a recessed brick panel. Look at the parapet ends. In 2001: Vacant, with a Friedman “under contract” sign.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": {"text": "What ornament sits on the ends of the parapet?", "opts": ["Stone urns", "Iron finials", "Carved eagles"], "a": 0}, "lost": false, "puzzle": "", "type": "Commercial", "rarity": "Common", "street": "E. Maple", "clue": "Stone urns stand guard on the parapet of this East Maple storefront."}, {"tour": "downtown", "id": "downtown-shain", "sid": "shain", "name": "Shain Townhouses", "addr": "378–390 E. Maple & 112–124 Brownell", "year": 1916, "yearLabel": "1916", "lat": 42.54669, "lon": -83.212, "archive": [], "photos": [["downtown/img/shain-townhouses-2001", "Panorama", "July 2001"], ["downtown/img/stitched-result1shain", "Stitched panorama", "July 2001"]], "notes": "White stucco walls under steep, shingled gables wrap the corner of Maple and Brownell. End of the South & East loop. In 2001: Townhouses and a ground-floor shop at the corner.", "src": "City of Birmingham designated list; 2001 Birmingham virtual tour (build year)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Townhouse", "rarity": "Common", "street": "E. Maple & Brownell", "clue": "White stucco and steep gables wrap a corner on East Maple."}, {"tour": "walk", "id": "walk-postoffice", "sid": "postoffice", "name": "United States Post Office", "addr": "322 Martin St.", "year": 1939, "yearLabel": "1939", "lat": 42.54593, "lon": -83.21748, "archive": [["walk/img/postoffice-a1", "The Post Office", "Archive"]], "photos": [["walk/img/postoffice-t1", "Front on Martin Street", "2001"]], "notes": "Built in 1939 as a Depression-era federal public works project, on land bought from St. James Episcopal Church. The Eccentric promised in 1938 an “English type” building to match the Municipal Building and library, but the 1939 sketch showed a neo-Greek design instead. Residents were perturbed at first; over the years its scale made it a valued part of the civic center. Inside: Art Deco fittings and a WPA mural by Royal Oak artist Carlos Lopez of a pioneer picnic, every figure painted from portraits of real Oakland County pioneers.", "src": "Historic Houses & Public Buildings text (2001)", "style": "Neo-Greek / “modern Georgian”", "q": {"text": "Inside, what does the WPA mural show?", "opts": ["A pioneer picnic", "The Saginaw Trail stagecoach", "A Great Lakes shipwreck"], "a": 0}, "lost": false, "puzzle": "", "type": "Civic", "rarity": "Common", "street": "Martin St.", "clue": "A WPA painter seated real pioneers at a picnic inside."}, {"tour": "walk", "id": "walk-library", "sid": "library", "name": "Baldwin Public Library", "addr": "300 W. Merrill St.", "year": 1927, "yearLabel": "1927", "lat": 42.54521, "lon": -83.21723, "archive": [["walk/img/library-a1", "The library before its additions", "Archive"], ["walk/img/library-a2", "In winter", "Archive"], ["walk/img/library-a3", "After the 1960 wing", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/library-t1", "The 1982 Birkerts addition", "2001"], ["walk/img/library-t2", "Another view", "2001"], ["walk/img/library-t3", "The original 1927 building", "2001"], ["walk/img/library-t4", "Detail", "2001"]], "notes": "The village library began in Library Hall at Maple and Woodward, sharing space with village offices and the fire and police departments. Bonds passed in 1926; the cornerstone was laid April 16, 1927. Burrowes and Eurich of Detroit designed it to match City Hall, built a year later: warm brick, limestone trim, steep slate roofs. A 1960 wing closed the original north entry; in 1982 Birmingham architect Gunnar Birkerts wrapped that wing in a circular, limestone-clad addition, turning the entrance south again.", "src": "Historic Houses & Public Buildings text (2001)", "style": "", "q": {"text": "What shape is Gunnar Birkerts’s 1982 addition?", "opts": ["Circular", "Square glass box", "A tall tower"], "a": 0}, "lost": false, "puzzle": "", "type": "Civic", "rarity": "Common", "street": "W. Merrill St.", "clue": "Martha Baldwin’s namesake, later wrapped in a circle by a famous architect."}, {"tour": "walk", "id": "walk-communityhouse", "sid": "communityhouse", "name": "Birmingham Community House", "addr": "380 S. Bates St.", "year": 1930, "yearLabel": "1930", "lat": 42.54459, "lon": -83.2172, "archive": [["walk/img/communityhouse-a1", "Community House", "1969 · Present Past in Birmingham"], ["walk/img/communityhouse-a2", "Community House", "Archive"]], "photos": [["walk/img/communityhouse-t1", "From Bates Street", "2001"], ["walk/img/communityhouse-t2", "Front", "2001"], ["walk/img/communityhouse-t3", "Entry", "2001"]], "notes": "The Rev. Charles McCurdy of St. James proposed a community house in 1920; the first opened in 1923 in a small frame house at Maple and Bates. In 1928 Ruth Shain launched a campaign at the Birmingham Theatre premiere and raised $125,000. The cornerstone was laid April 28, 1929 (architects Farrer and Muehlman of Cadillac), and 5,000 to 7,000 people came to the housewarming on March 17, 1930. During the Depression it handed out reconditioned clothing and food for children.", "src": "Historic Houses & Public Buildings text (2001)", "style": "", "q": {"text": "About how many people came to the 1930 housewarming?", "opts": ["500", "5,000 to 7,000", "25,000"], "a": 1}, "lost": false, "puzzle": "", "type": "Civic", "rarity": "Common", "street": "S. Bates St.", "clue": "Ruth Shain raised $125,000 for it at a movie premiere."}, {"tour": "walk", "id": "walk-hewitt", "sid": "hewitt", "name": "Hewitt House", "addr": "211 Townsend St.", "year": 1885, "yearLabel": "c. 1885", "lat": 42.54439, "lon": -83.21618, "archive": [["walk/img/hewitt-a1", "Photographed by Dick Kelly, Observer & Eccentric", "1981"]], "photos": [["walk/img/hewitt-t1", "Front", "2001"], ["walk/img/hewitt-t2", "Side", "2001"]], "notes": "A house of about 1885 on Townsend Street. The archive photo was taken in 1981 by Dick Kelly of the Observer & Eccentric.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Townsend St.", "clue": ""}, {"tour": "walk", "id": "walk-townsendhouse", "sid": "townsendhouse", "name": "Townsend House", "addr": "339 Townsend St.", "year": 1881, "yearLabel": "1881", "lat": 42.54439, "lon": -83.217536, "archive": [], "photos": [["walk/img/townsendhouse-t1", "Front", "2001"]], "notes": "Built in 1881 on the street that carries the same name.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Townsend St.", "clue": ""}, {"tour": "walk", "id": "walk-langley", "sid": "langley", "name": "Langley House", "addr": "404 S. Bates St.", "year": 1880, "yearLabel": "1880", "lat": 42.544409, "lon": -83.21705, "archive": [], "photos": [["walk/img/langley-t1", "Front", "2001"], ["walk/img/langley-t2", "Side", "2001"]], "notes": "An 1880 house on Bates Street, at the north end of the old residential blocks south of the civic center.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "S. Bates St.", "clue": ""}, {"tour": "walk", "id": "walk-williambell", "sid": "williambell", "name": "William Bell House", "addr": "384 W. Brown St.", "year": 1884, "yearLabel": "1884", "lat": 42.54374, "lon": -83.21797, "archive": [], "photos": [["walk/img/williambell-t1", "Front", "2000"]], "notes": "Built in 1884 on Brown Street.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "W. Brown St.", "clue": ""}, {"tour": "walk", "id": "walk-cinderella", "sid": "cinderella", "name": "Cinderella Patch House", "addr": "347 W. Brown St.", "year": 1860, "yearLabel": "c. 1860", "lat": 42.5437, "lon": -83.21756, "archive": [["walk/img/cinderella-a1", "The original house", "1969 · Present Past in Birmingham"], ["walk/img/cinderella-a2", "The original house", "1988"]], "photos": [["walk/img/cinderella-t1", "The replica and attached condominiums", "2000"], ["walk/img/cinderella-t2", "329–347 W. Brown today", "2000"]], "notes": "Cinderilla Patch bought these lots in 1870 and lived here until she died in 1897; from 1894 to 1896 she was listed as indigent and paid no taxes. The two-story balloon-frame farmhouse once faced Bates Street and was moved a few feet west around 1900. In 1994 the owner had permission to attach three condominiums, but once work began the old house proved too far gone to save. An architect who specializes in restorations replicated part of it; the landmark designation stays with the site.", "src": "Bates Street District report", "style": "Michigan farmhouse", "q": {"text": "Which way did the original house face before it was moved around 1900?", "opts": ["Bates Street", "Brown Street", "Merrill Street"], "a": 0}, "lost": true, "puzzle": "", "type": "Farmhouse", "rarity": "Lost", "street": "W. Brown St.", "clue": "A widow’s farmhouse, turned to face a new street, then lost in 1994."}, {"tour": "walk", "id": "walk-dr289", "sid": "dr289", "name": "District resource: 289 W. Brown", "addr": "289 W. Brown / 501–511 S. Bates", "year": 1897, "yearLabel": "1894–1900", "lat": 42.54365, "lon": -83.21691, "archive": [], "photos": [["walk/img/dr289-t1", "Front", "2001"]], "notes": "Mrs. Goodell owned this land on the 1872 county atlas. Thomas A. Ward bought most of it about 1893 and built between 1894 and 1900; tax jumps in both years leave the date uncertain. The Wards stayed until about 1915, and C. V. Hemstreet then kept it about twenty years. One of several Queen Anne houses of the 1890s and early 1900s in Birmingham, a number of which have already been torn down.", "src": "Bates Street District report", "style": "Queen Anne", "q": null, "lost": false, "puzzle": "", "type": "Queen Anne", "rarity": "Uncommon", "street": "W. Brown St.", "clue": ""}, {"tour": "walk", "id": "walk-koontz", "sid": "koontz", "name": "Koontz House", "addr": "544 S. Bates St.", "year": 1896, "yearLabel": "1896", "lat": 42.543296, "lon": -83.21705, "archive": [["walk/img/koontz-a1", "Harriet Koontz in front of the house with granddaughter Virginia", "c. 1935"]], "photos": [["walk/img/koontz-t1", "Front", "2000"]], "notes": "John and Elizabeth Hall gave this lot, just north of their homestead, to their daughter Harriet when she married carpenter and upholsterer Thomas Koontz, who built the house in 1896. Harriet lived here until 1938; the house stayed in the family until 1983. Queen Anne marks: multiple gables, scalloped shingles, an L-shaped front porch with turned supports and balusters, and front and side bays.", "src": "Bates Street District report", "style": "Queen Anne", "q": {"text": "What shape is the front porch?", "opts": ["L-shaped, wrapping a corner", "A small square stoop", "A two-story portico"], "a": 0}, "lost": false, "puzzle": "", "type": "Queen Anne", "rarity": "Uncommon", "street": "S. Bates St.", "clue": "A carpenter built it for the farmer’s daughter, just north of the old farmhouse."}, {"tour": "walk", "id": "walk-parsonage", "sid": "parsonage", "name": "United Presbyterian Parsonage", "addr": "539 S. Bates St.", "year": 1890, "yearLabel": "c. 1890", "lat": 42.543336, "lon": -83.21725, "archive": [], "photos": [["walk/img/parsonage-t1", "Front", "2000"]], "notes": "Built about 1890 as the parsonage of the United Presbyterian Church. Pastor David Hunter Currie appears as owner in 1923, the first year taxes were paid on it; before 1931 he left for a larger Philadelphia parish while his daughter Isabel Stiles stayed on. A simple Victorian village house whose look has changed little in a hundred years; the front porch isn’t original but suits it.", "src": "Bates Street District report", "style": "Simple Victorian", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "S. Bates St.", "clue": "The pastor paid no taxes on it until 1923."}, {"tour": "walk", "id": "walk-dr551", "sid": "dr551", "name": "District resource: 551 S. Bates", "addr": "551 S. Bates St.", "year": 1900, "yearLabel": "1900", "lat": 42.543241, "lon": -83.21725, "archive": [], "photos": [["walk/img/dr551-t1", "Front", "2000"]], "notes": "A two-story frame house of 1900 in the Queen Anne style, the dominant domestic style of the period: a hipped roof, a lower front-facing gable, and delicate turned porch supports and spindles.", "src": "Bates Street District report", "style": "Queen Anne", "q": {"text": "What kind of roof does it have?", "opts": ["Hipped, with a lower front gable", "Flat", "Gambrel, like a barn"], "a": 0}, "lost": false, "puzzle": "", "type": "Queen Anne", "rarity": "Common", "street": "S. Bates St.", "clue": ""}, {"tour": "walk", "id": "walk-dr563", "sid": "dr563", "name": "District resource: 563 S. Bates", "addr": "563 S. Bates St.", "year": 1920, "yearLabel": "1920", "lat": 42.543145, "lon": -83.21725, "archive": [], "photos": [["walk/img/dr563-t1", "Front", "2000"]], "notes": "A two-story brick house of 1920. Craftsman bungalow features: a low-pitched gabled roof with wide open eaves and exposed rafters, a full-width porch on square columns whose bases run to the ground, and decorative beams under the gable.", "src": "Bates Street District report", "style": "Craftsman bungalow", "q": {"text": "Look under the eaves. What can you see?", "opts": ["Exposed roof rafters", "Carved brackets", "A boxed cornice"], "a": 0}, "lost": false, "puzzle": "", "type": "Craftsman", "rarity": "Common", "street": "S. Bates St.", "clue": ""}, {"tour": "walk", "id": "walk-peck", "sid": "peck", "name": "Peck House", "addr": "571 S. Bates St.", "year": 1901, "yearLabel": "1901", "lat": 42.543082, "lon": -83.21725, "archive": [], "photos": [["walk/img/peck-t1", "Front", "2000"]], "notes": "Built in 1901 and declared historic by the City Commission in April 1978, named for the Peck family, who owned it from 1910 to 1937. Converted to two units in the late 1920s. A front-gabled folk Victorian: plain second-floor window frames topped with small triangular pediments, another over the front door. The Doric-column porch is probably a later change.", "src": "Bates Street District report", "style": "Folk Victorian", "q": {"text": "What tops the second-floor windows and the front door?", "opts": ["Small triangular pediments", "Round arches", "Nothing at all"], "a": 0}, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Common", "street": "S. Bates St.", "clue": "Little triangular pediments over the windows of a folk Victorian."}, {"tour": "walk", "id": "walk-johnhall", "sid": "johnhall", "name": "John Hall House", "addr": "584–588 S. Bates St.", "year": 1865, "yearLabel": "1865", "lat": 42.542962, "lon": -83.21705, "archive": [["walk/img/johnhall-a1", "The Hall homestead", "c. 1920"], ["walk/img/johnhall-a2", "John Hall House", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/johnhall-t1", "Front", "2000"]], "notes": "John Hall built here in 1865 on about four acres. He later gave lots to his daughters: Harriet (and Thomas Koontz) built just north, Emily Ruth (and Frank Schlaack) just south. Anna lived in the homestead until 1933. Family lore recorded in 1969 says there was once a hidden inner room “where the early occupants hid when the Indians came near.” A farmhouse with a box porch, on its original foundation; the brick chimney on the east side was added in 1967.", "src": "Bates Street District report; Present Past (1969)", "style": "Nineteenth-century farmhouse", "q": {"text": "Which feature on the east side was added in 1967?", "opts": ["A brick chimney", "A garage", "A bay window"], "a": 0}, "lost": false, "puzzle": "Three family houses on one farm: the Halls’ daughters built the Koontz House to the north and the Frank Schlaack House to the south.", "type": "Farmhouse", "rarity": "Uncommon", "street": "S. Bates St.", "clue": "The 1865 farmhouse with a hidden room, at the heart of a four-acre farm."}, {"tour": "walk", "id": "walk-dr595", "sid": "dr595", "name": "District resource: 595 S. Bates", "addr": "595 S. Bates St.", "year": 1938, "yearLabel": "1938", "lat": 42.542891, "lon": -83.21725, "archive": [], "photos": [["walk/img/dr595-t1", "Front", "2000"]], "notes": "Built in 1938 for Vida B. McGiffin, a Baldwin High School teacher, on land bought from the defunct First State Savings Bank. Builder John H. Rosso later founded the Birmingham Lumber Company. Originally brick below and painted lap siding above, one room deep; a 1982 remodeling more than doubled it and faced it entirely in brick.", "src": "Bates Street District report", "style": "Colonial", "q": null, "lost": false, "puzzle": "", "type": "Colonial", "rarity": "Common", "street": "S. Bates St.", "clue": "A teacher’s house on land bought from a failed bank."}, {"tour": "walk", "id": "walk-majorjones", "sid": "majorjones", "name": "Major Jones House", "addr": "607 S. Bates St.", "year": 1865, "yearLabel": "1865", "lat": 42.542795, "lon": -83.21725, "archive": [], "photos": [["walk/img/majorjones-t1", "Front", "2000"]], "notes": "Built in 1865 and designated in 1978; with the John Hall House, one of the two oldest homes on the street. Queen Anne touches include inverted-U ornament around the windows and detailing on the gable facing Bates. Its barn came down in 1946. In the mid-1990s the owner petitioned to remove it from the district so it could be demolished and replaced. It was still standing in 2001.", "src": "Bates Street District report", "style": "", "q": {"text": "What shape is the ornament around the windows?", "opts": ["An inverted U", "A pointed Gothic arch", "A plain square frame"], "a": 0}, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "S. Bates St.", "clue": "Its owner tried to have it delisted and torn down. It survived."}, {"tour": "walk", "id": "walk-frankschlaack", "sid": "frankschlaack", "name": "Frank Schlaack House", "addr": "612 S. Bates St.", "year": 1902, "yearLabel": "c. 1902", "lat": 42.542756, "lon": -83.21705, "archive": [], "photos": [["walk/img/frankschlaack-t1", "Front", "2001"]], "notes": "Built about 1902 by Frank Schlaack (1861–1939), who ran a meat market at Maple and Woodward for thirty years and served as assessor, school board member and president of the Cemetery Association. His wife Emily Ruth was John Hall’s daughter; their twins Merrill and Merritt were born here in 1902. One of the few good Queen Anne examples left in Birmingham. Its barn still stands, remodeled as a house facing Chester Street.", "src": "Bates Street District report", "style": "Queen Anne", "q": {"text": "What became of the Schlaacks’ barn?", "opts": ["It’s now a house facing Chester Street", "Torn down in 1946", "Moved to Greenwood Cemetery"], "a": 0}, "lost": false, "puzzle": "", "type": "Queen Anne", "rarity": "Common", "street": "S. Bates St.", "clue": "A butcher’s Queen Anne, born the same year as his twins."}, {"tour": "walk", "id": "walk-perry", "sid": "perry", "name": "John W. Perry House", "addr": "651 S. Bates St.", "year": 1882, "yearLabel": "1882", "lat": 42.542446, "lon": -83.21725, "archive": [], "photos": [["walk/img/perry-t1", "Front", "2000"]], "notes": "John W. Perry, from a Troy farm, bought the land in 1880 and built in 1882. The Eccentric reported he would “occupy his barn until he can build his house,” and soon after that he’d started a lumberyard beside it. Perry lived here until his death in 1917. Later owner Fred Weller lost his coal and lumber business in the Depression. Italianate features: a low-pitched roof, tall narrow windows, wide eaves on decorative brackets.", "src": "Bates Street District report", "style": "Victorian Italianate", "q": {"text": "What holds up the wide eaves?", "opts": ["Decorative brackets", "Columns", "Nothing; there are no eaves"], "a": 0}, "lost": false, "puzzle": "", "type": "Italianate", "rarity": "Uncommon", "street": "S. Bates St.", "clue": "A man lived in his barn until this house was done."}, {"tour": "walk", "id": "walk-mcbridehouse", "sid": "mcbridehouse", "name": "McBride House", "addr": "668 S. Bates St.", "year": 1897, "yearLabel": "1895–1900", "lat": 42.5423, "lon": -83.21705, "archive": [], "photos": [["walk/img/mcbridehouse-t1", "Front", "2001"]], "notes": "Built between 1895 and 1900 by Matthew McBride. In the 1930s it passed to Earl Cunningham, a former accounting-school dean from Ellsworth, Maine, who became a General Motors auditor; it stayed in his family. Barely altered outside: the front porch, with decorative brackets, turned balusters and scalloped shingles in the gable, is a fine late Queen Anne example.", "src": "Bates Street District report", "style": "Late Queen Anne", "q": {"text": "What decorates the gable over the porch?", "opts": ["Scalloped shingles", "Half-timbering", "Stucco"], "a": 0}, "lost": false, "puzzle": "", "type": "Queen Anne", "rarity": "Uncommon", "street": "S. Bates St.", "clue": "An auditor from Maine kept this late Queen Anne almost untouched."}, {"tour": "walk", "id": "walk-dr671", "sid": "dr671", "name": "District resource: 671 S. Bates", "addr": "671 S. Bates St.", "year": 1920, "yearLabel": "1920", "lat": 42.542287, "lon": -83.21725, "archive": [], "photos": [["walk/img/dr671-t1", "Front", "2000"]], "notes": "A 1920 Craftsman bungalow with a side-gabled roof, its porch under the main roof with decorative beams below the gable. In 1987–88 the roof was raised, the porch enclosed and the attic made a full second floor.", "src": "Bates Street District report", "style": "Craftsman bungalow", "q": null, "lost": false, "puzzle": "", "type": "Craftsman", "rarity": "Common", "street": "S. Bates St.", "clue": ""}, {"tour": "walk", "id": "walk-hood", "sid": "hood", "name": "Hood House", "addr": "555 Stanley Blvd.", "year": 1880, "yearLabel": "c. 1880", "lat": 42.54311, "lon": -83.21914, "archive": [], "photos": [["walk/img/hood-t1", "Front", "Aug. 2001"]], "notes": "A house of about 1880 on Stanley.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Stanley Blvd.", "clue": ""}, {"tour": "walk", "id": "walk-grooms", "sid": "grooms", "name": "Grooms House", "addr": "587 Stanley Blvd.", "year": 1880, "yearLabel": "c. 1880", "lat": 42.54284, "lon": -83.21913, "archive": [], "photos": [["walk/img/grooms-t1", "Front", "Aug. 2001"]], "notes": "A house of about 1880 on Stanley, a few doors from the Hood House.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Stanley Blvd.", "clue": ""}, {"tour": "walk", "id": "walk-trollop", "sid": "trollop", "name": "Trollop House", "addr": "536 Southfield Rd.", "year": 1840, "yearLabel": "c. 1840", "lat": 42.54336, "lon": -83.2215, "archive": [["walk/img/trollop-a1", "Trollop House", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/trollop-t1", "Front", "Aug. 2001"]], "notes": "In the late 1860s Mr. T. Trollop owned all the land on the west side of Southfield from Maple to Lincoln, reaching past the Rouge River, except for an acre and a half belonging to H. Woodin. The Trollop property later passed to the Rev. Robert D. Bird. One of the oldest houses on the tour, about 1840.", "src": "Present Past (1969)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Pioneer", "rarity": "Rare", "street": "Southfield Rd.", "clue": "His land once ran from Maple to Lincoln, past the Rouge."}, {"tour": "walk", "id": "walk-schuyler", "sid": "schuyler", "name": "Schuyler House", "addr": "544 Townsend St.", "year": 1870, "yearLabel": "c. 1870", "lat": 42.54441, "lon": -83.21971, "archive": [["walk/img/schuyler-a1", "Schuyler House", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/schuyler-t1", "540–544 Townsend", "2001"]], "notes": "Altered considerably in the early 1900s: the original house had a large double door in the center before it became the duplex you see today. The abstract shows the Schuylers paid $200 for a 120-foot lot and later sold it, with a house on it, for $2,000.", "src": "Present Past (1969)", "style": "", "q": {"text": "What did the original house have in the center of the front?", "opts": ["A large double door", "A tower", "A bay window"], "a": 0}, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Townsend St.", "clue": "A $200 lot, and a double door that became two."}, {"tour": "walk", "id": "walk-fall", "sid": "fall", "name": "Fall House", "addr": "523 Townsend St.", "year": 1870, "yearLabel": "c. 1870", "lat": 42.54446, "lon": -83.219484, "archive": [["walk/img/fall-a1", "Fall House", "1969 · Present Past in Birmingham"]], "photos": [], "notes": "Home of Nathan Fall, a Civil War veteran and member of the G.A.R., and his family: children Mary and Edgar from his first marriage, and Ellen, Edna and Eva from his second. We don’t have a recent photo of this one yet.", "src": "Present Past (1969)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Townsend St.", "clue": "A Civil War veteran of the G.A.R. raised five children here."}, {"tour": "walk", "id": "walk-stewart", "sid": "stewart", "name": "Stewart House", "addr": "505 Townsend St.", "year": 1870, "yearLabel": "c. 1870", "lat": 42.54446, "lon": -83.219293, "archive": [["walk/img/stewart-a1", "Stewart House", "1969"], ["walk/img/stewart-a2", "Stewart House", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/stewart-t1", "Front", "2001"]], "notes": "A house of about 1870 on Townsend; the 1969 survey photographed it twice.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Townsend St.", "clue": ""}, {"tour": "walk", "id": "walk-houstonlogan", "sid": "houstonlogan", "name": "Houston-Logan House", "addr": "504–506 Townsend St.", "year": 1890, "yearLabel": "1890", "lat": 42.54434, "lon": -83.219283, "archive": [], "photos": [["walk/img/houstonlogan-t1", "Front", "2001"]], "notes": "An 1890 double house on Townsend.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Townsend St.", "clue": ""}, {"tour": "walk", "id": "walk-tomsdickinson", "sid": "tomsdickinson", "name": "Toms-Dickinson House", "addr": "464 Townsend St.", "year": 1905, "yearLabel": "1905", "lat": 42.54434, "lon": -83.218859, "archive": [], "photos": [["walk/img/tomsdickinson-t1", "Front", "2001"], ["walk/img/tomsdickinson-t2", "Side", "2001"]], "notes": "The youngest house on this loop, built in 1905.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Early modern", "rarity": "Common", "street": "Townsend St.", "clue": ""}, {"tour": "walk", "id": "walk-carter", "sid": "carter", "name": "Abigail Carter House", "addr": "415 W. Merrill St.", "year": 1884, "yearLabel": "1884", "lat": 42.54516, "lon": -83.218584, "archive": [], "photos": [["walk/img/carter-t1", "Front", "2001"], ["walk/img/carter-t2", "From the corner", "2000"]], "notes": "Built in 1884 on Merrill.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "W. Merrill St.", "clue": ""}, {"tour": "walk", "id": "walk-irving", "sid": "irving", "name": "Hugh Irving House", "addr": "439 W. Merrill St.", "year": 1870, "yearLabel": "1870", "lat": 42.54516, "lon": -83.218866, "archive": [["walk/img/irving-a1", "Hugh Irving, his wife and two children, at the house’s first site at Chester and Maple", "c. 1915"], ["walk/img/irving-a2", "Irving House", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/irving-t1", "Front", "2001"], ["walk/img/irving-t2", "From the street", "2000"]], "notes": "Hugh Irving, born in Ireland in 1815, worked as a tinsmith in England and came to America in 1849, settling in a village then called Piety Hill. He sold tinware, stoves, lumber and farm tools from a hardware store where Huston’s Hardware later stood. Struck by how much the little industrial town resembled England’s Birmingham, he suggested the new name. He also led fundraising for the Civil War monument now beside the Municipal Building. The house first stood at the southwest corner of Chester and Maple.", "src": "Present Past (1969); 2001 archive notes", "style": "", "q": {"text": "What was the village called before Hugh Irving suggested “Birmingham”?", "opts": ["Piety Hill", "Hunter’s Corners", "Saginaw Station"], "a": 0}, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "W. Merrill St.", "clue": "Home of the man who gave Birmingham its name."}, {"tour": "walk", "id": "walk-benedict", "sid": "benedict", "name": "Daisy Benedict House", "addr": "535 W. Merrill St.", "year": 1868, "yearLabel": "1868", "lat": 42.54502, "lon": -83.21999, "archive": [["walk/img/benedict-a1", "Daisy Benedict House", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/benedict-t1", "Front", "2001"], ["walk/img/benedict-t2", "Side", "2001"], ["walk/img/benedict-t3", "Front", "Aug. 2001"]], "notes": "Built in 1868. In 1969 it belonged to Burke Bartlett of Bloomfield Hills, who kept it as something of a hobby house and rented it out.", "src": "Present Past (1969)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "W. Merrill St.", "clue": ""}, {"tour": "walk", "id": "walk-chatfield", "sid": "chatfield", "name": "Campbell-Hiram Chatfield House", "addr": "460 W. Maple", "year": 1850, "yearLabel": "c. 1850", "lat": 42.54661, "lon": -83.21936, "archive": [["walk/img/chatfield-a1", "Chatfield House", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/chatfield-t1", "Front", "Aug. 2001"]], "notes": "One of the Mill Pond neighborhood’s oldest houses, about 1850, on West Maple.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Pioneer", "rarity": "Rare", "street": "W. Maple", "clue": ""}, {"tour": "walk", "id": "walk-edwinbaldwin", "sid": "edwinbaldwin", "name": "Edwin Baldwin House", "addr": "484 W. Maple", "year": 1860, "yearLabel": "c. 1860", "lat": 42.54648, "lon": -83.2198, "archive": [], "photos": [["walk/img/edwinbaldwin-t1", "Front", "Aug. 2001"]], "notes": "A house of about 1860 on West Maple, next to the Historical Park.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "W. Maple", "clue": ""}, {"tour": "walk", "id": "walk-hunter", "sid": "hunter", "name": "John W. Hunter House", "addr": "500 W. Maple", "year": 1822, "yearLabel": "1822", "lat": 42.54628, "lon": -83.2204, "archive": [["walk/img/hunter-a1", "Hunter House, the year it moved to Maple", "c. 1969"], ["walk/img/hunter-a2", "Hunter House on Brown Street", "1969 · Present Past in Birmingham"]], "photos": [], "notes": "Birmingham’s first frame house, built in 1822 by carpenter George Taylor for John W. Hunter, one of the four original settlers. It stood on a rise on the west side of the Saginaw Trail, on Woodward between Maple and Merrill, moved to 264 Brown Street in 1893 and here in 1969. Given to the city by Mr. and Mrs. James Flack, it is a museum furnished with period antiques.", "src": "Present Past (1969); Historical Park text", "style": "", "q": {"text": "How many times has the Hunter House been moved?", "opts": ["Twice", "Never", "Four times"], "a": 0}, "lost": false, "puzzle": "The Hunter House stood on Woodward between Maple and Merrill, where the downtown walk now passes. Where exactly? The 1969 notes say “where 160 South Woodward is now.”", "type": "Pioneer", "rarity": "Legendary", "street": "W. Maple", "clue": "The first frame house in town. It has moved twice and now rests on West Maple."}, {"tour": "walk", "id": "walk-allen", "sid": "allen", "name": "Allen House", "addr": "556 W. Maple", "year": 1926, "yearLabel": "1926", "lat": 42.54601, "lon": -83.22106, "archive": [["walk/img/allen-a1", "Allen House", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/allen-t1", "Front", "Aug. 2001"]], "notes": "Built in 1926 on the site of the village’s first school, using some of its bricks. The city bought it and the Historical Park with a 1969 millage. The Birmingham Historical Society, founded in 1965, kept a museum room and archives here.", "src": "Historical Park text (2001)", "style": "", "q": {"text": "What stood on this site before the Allen House?", "opts": ["The village’s first school", "A grist mill", "A church"], "a": 0}, "lost": false, "puzzle": "", "type": "Early modern", "rarity": "Common", "street": "W. Maple", "clue": "Built with bricks from the village’s first school."}, {"tour": "walk", "id": "walk-lamb", "sid": "lamb", "name": "Edgar Lamb House", "addr": "467 Willits St.", "year": 1898, "yearLabel": "1898", "lat": 42.5473, "lon": -83.21993, "archive": [], "photos": [["walk/img/lamb-t1", "Front", "Aug. 2001"], ["walk/img/lamb-t2", "The entry", "Aug. 2001"], ["walk/img/lamb-t3", "Original upstairs wall storage", "Aug. 2001"]], "notes": "An 1898 house on Willits, visible from the back of the Hunter House. Geri Dunkle’s 2001 photos include the entry and original built-in storage upstairs.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Willits St.", "clue": ""}, {"tour": "walk", "id": "walk-stickney", "sid": "stickney", "name": "Stickney House", "addr": "412 Willits St.", "year": 1870, "yearLabel": "c. 1870", "lat": 42.54743, "lon": -83.21914, "archive": [["walk/img/stickney-a1", "Stickney House", "1969"], ["walk/img/stickney-a2", "Stickney House", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/stickney-t1", "Front", "2001"]], "notes": "A house of about 1870 on Willits, photographed for the 1969 survey.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Willits St.", "clue": ""}, {"tour": "walk", "id": "walk-raynale", "sid": "raynale", "name": "Ebenezer Raynale House", "addr": "300 Warren Court", "year": 1840, "yearLabel": "c. 1840", "lat": 42.54771, "lon": -83.21771, "archive": [["walk/img/raynale-a1", "Raynale House", "1969 · Present Past in Birmingham"]], "photos": [["walk/img/raynale-t1", "Front", "Aug. 2001"]], "notes": "The Raynales settled first in Franklin; three generations were doctors, and Dr. Ebenezer Raynale served as a state senator. The house was moved in the 1890s to Willits Street, then moved again to Warren Court by Harry Denyes, who bought it. Dr. Raynale is buried in Greenwood Cemetery.", "src": "Present Past (1969)", "style": "", "q": {"text": "How many generations of Raynales were doctors?", "opts": ["Three", "One", "Five"], "a": 0}, "lost": false, "puzzle": "", "type": "Pioneer", "rarity": "Rare", "street": "Warren Court", "clue": "Three generations of doctors; a house that moved twice."}, {"tour": "ride", "id": "ride-bdaniels", "sid": "bdaniels", "name": "Benjamin Daniels House", "addr": "372 Harmon St.", "year": 1880, "yearLabel": "1880", "lat": 42.55056, "lon": -83.21902, "archive": [], "photos": [["ride/img/bdaniels-t1", "From the street, with the stone walk to the porch", "June 2001"], ["ride/img/bdaniels-t2", "The house and its long side wing", "June 2001"], ["ride/img/bdaniels-t3", "Front", "July 2001"], ["ride/img/bdaniels-t4", "Side", "July 2001"]], "notes": "Start in the Mill Pond neighborhood, where Birmingham began. Built in 1880: a front-gabled white clapboard farmhouse with a porch that wraps the front and a lower wing stepping back along the drive.", "src": "2001 tour list; city designated list", "style": "", "q": {"text": "What wraps around the front of the house?", "opts": ["A covered porch", "A stone wall", "A glass sunroom"], "a": 0}, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Harmon St.", "clue": "Start in the Mill Pond, where the town began: a farmhouse with a wraparound porch."}, {"tour": "ride", "id": "ride-greenwood", "sid": "greenwood", "name": "Greenwood Cemetery", "addr": "Oak St. at Greenwood", "year": 1825, "yearLabel": "1825", "lat": 42.55327, "lon": -83.22429, "archive": [["ride/img/greenwood-a1", "Greenwood Cemetery", "1969 · Present Past in Birmingham"]], "photos": [["ride/img/greenwood-t1", "The gate: fieldstone piers and an iron fence", "June 2001"], ["ride/img/greenwood-t2", "Among the old stones", "June 2001"], ["ride/img/greenwood-t3", "Cemetery", "July 2001"], ["ride/img/greenwood-t4", "Stone labeled “Fredericks” in the 2001 files", "July 2001"], ["ride/img/greenwood-t5", "Stone labeled “Willits” in the 2001 files", "July 2001"], ["ride/img/greenwood-t6", "Stone labeled “Worth” in the 2001 files", "July 2001"], ["ride/img/greenwood-t7", "Stone labeled “Hanna” in the 2001 files", "July 2001"]], "notes": "Birmingham’s oldest burying ground. Dr. Ziba Swan bought the land from the federal government in 1821; the first burials came in 1825. Twenty-one citizens, including Dr. Ebenezer Raynale, bought it in 1846, and it reached eight acres by 1904. The city took over in 1946. Buried here: John Daniels, the town’s only Revolutionary War veteran (1832), Martha Baldwin of the Baldwin Library, George and Ellen Scripps Booth of Cranbrook, Pewabic Pottery’s Mary Chase Stratton, and Frank Schlaack of Bates Street. Use the east gate; don’t park inside.", "src": "City of Birmingham, About Greenwood Cemetery; Michigan historical marker L1832 (1994)", "style": "", "q": {"text": "Read the state marker. Who is the only Revolutionary War veteran buried here?", "opts": ["John Daniels", "Ziba Swan", "Ebenezer Raynale"], "a": 0}, "lost": false, "puzzle": "", "type": "Sacred ground", "rarity": "Legendary", "street": "Oak St. at Greenwood", "clue": "Where the town’s only Revolutionary War soldier rests."}, {"tour": "ride", "id": "ride-quartonhomestead", "sid": "quartonhomestead", "name": "Quarton Homestead", "addr": "1155 Quarton Rd.", "year": 1840, "yearLabel": "c. 1840", "lat": 42.55999, "lon": -83.22749, "archive": [["ride/img/quartonhomestead-a1", "Quarton Homestead", "1969 · Present Past in Birmingham"]], "photos": [["ride/img/quartonhomestead-t1", "The homestead", "July 2001"], ["ride/img/quartonhomestead-t2", "From the road", "July 2001"], ["ride/img/quartonhomestead-t3", "Front", "July 2001"], ["ride/img/quartonhomestead-t4", "Detail", "July 2001"], ["ride/img/quartonhomestead-t5", "Detail", "July 2001"]], "notes": "Like many first settlers, the Quartons were farmers. They owned a great deal of land and sold parts of it to later settlers. A Quarton son was president of the local school board, and one of Birmingham’s elementary schools is named in his memory.", "src": "Present Past in Birmingham (1969)", "style": "", "q": {"text": "What in Birmingham is named for the Quarton son who led the school board?", "opts": ["An elementary school", "The library", "A railroad station"], "a": 0}, "lost": false, "puzzle": "", "type": "Farmhouse", "rarity": "Rare", "street": "Quarton Rd.", "clue": "The farm family whose name is on a school and a road."}, {"tour": "ride", "id": "ride-fredquarton", "sid": "fredquarton", "name": "Fred W. Quarton House", "addr": "1158 W. Maple", "year": 1928, "yearLabel": "1928", "lat": 42.54615, "lon": -83.22755, "archive": [], "photos": [["ride/img/fredquarton-t1", "Front, with the porch and brick walk", "June 2001"], ["ride/img/fredquarton-t2", "From the drive", "June 2001"], ["ride/img/fredquarton-t3", "Front", "July 2001"]], "notes": "Built in 1928 for Fred W. Quarton, across the road from the family’s older holdings. A brick foursquare: nearly cubic, two full stories, a hipped roof of green tile with a dormer facing the street, and a broad front porch.", "src": "2001 tour list", "style": "", "q": {"text": "Look up. What faces the street from the middle of the roof?", "opts": ["A hipped dormer", "A cupola", "A widow’s walk"], "a": 0}, "lost": false, "puzzle": "", "type": "Early modern", "rarity": "Common", "street": "W. Maple", "clue": "A green-tiled foursquare across from the family’s old farm land."}, {"tour": "ride", "id": "ride-stewartwatkins", "sid": "stewartwatkins", "name": "Stewart-Watkins House", "addr": "146 Puritan Ave.", "year": 1855, "yearLabel": "c. 1855", "lat": 42.54672, "lon": -83.2299, "archive": [["ride/img/stewartwatkins-a1", "Watkins Farmhouse", "1969 · Present Past in Birmingham"]], "photos": [["ride/img/stewartwatkins-t1", "The long front with its columned porch", "June 2001"], ["ride/img/stewartwatkins-t2", "The front door and brick walk", "June 2001"], ["ride/img/stewartwatkins-t3", "The chimney end and the drive", "June 2001"], ["ride/img/stewartwatkins-t4", "From across the lawn", "June 2001"], ["ride/img/stewartwatkins-t5", "The full length of the house", "June 2001"]], "notes": "Gilbert Watkins, a wealthy Detroit insurance man, brought Shetland ponies to the area. He raised them here, and they often served as children’s rides at Bob-Lo and at fairs. The house grew sideways: a main block, a dormered middle section and a lower wing, with a broad brick chimney beside the drive.", "src": "Present Past in Birmingham (1969)", "style": "", "q": {"text": "What did Gilbert Watkins raise here?", "opts": ["Shetland ponies", "Dairy cattle", "Racing pigeons"], "a": 0}, "lost": false, "puzzle": "", "type": "Farmhouse", "rarity": "Rare", "street": "Puritan Ave.", "clue": "Shetland ponies for Bob-Lo were raised here."}, {"tour": "ride", "id": "ride-wooster", "sid": "wooster", "name": "Eli Wooster House", "addr": "1876 Northlawn Blvd.", "year": 1844, "yearLabel": "1844", "lat": 42.53598, "lon": -83.23669, "archive": [["ride/img/wooster-a1", "Wooster Farmhouse", "1969 · Present Past in Birmingham"], ["ride/img/wooster-a2", "Wooster Farm House", "Archive"]], "photos": [["ride/img/wooster-t1", "Behind the picket fence", "June 2001"], ["ride/img/wooster-t2", "Along the fence line", "June 2001"], ["ride/img/wooster-t3", "From the drive, with the mailbox", "June 2001"], ["ride/img/wooster-t4", "Wide view", "July 2001"]], "notes": "Built in 1844. The 1969 booklet singled out the farmhouse’s “grille-work under the eaves, an architectural feature found typically in earlier homes in northern New York state, from which area many early Birmingham families emigrated.” In 2001 the tour’s editor drove past and wrote that it “didn’t look exactly like the photo.” Compare the 1969 photo with what you see.", "src": "Present Past in Birmingham (1969), text by Billie Pierno and Judy Shumway", "style": "", "q": null, "lost": false, "puzzle": "Is the grille-work under the eaves still there? Look, then add a field report.", "type": "Farmhouse", "rarity": "Rare", "street": "Northlawn Blvd.", "clue": "Grille-work under the eaves, if it still survives."}, {"tour": "ride", "id": "ride-erwin", "sid": "erwin", "name": "Richard Erwin House", "addr": "1119 Southfield Rd.", "year": 1898, "yearLabel": "1898", "lat": 42.53875, "lon": -83.22175, "archive": [], "photos": [["ride/img/erwin-t1", "The house behind its iron fence", "June 2001"], ["ride/img/erwin-t2", "Front", "July 2001"], ["ride/img/erwin-t3", "Another view", "July 2001"]], "notes": "Built in 1898 for Richard Erwin: a white two-story house with a side gable, set behind an iron fence and flower beds.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "Southfield Rd.", "clue": ""}, {"tour": "ride", "id": "ride-randall", "sid": "randall", "name": "Randall-Latham House", "addr": "1128 Southfield Rd.", "year": 1850, "yearLabel": "c. 1850", "lat": 42.5386, "lon": -83.22145, "archive": [["ride/img/randall-a1", "Randall House, with its added pillars", "1969 · Present Past in Birmingham"]], "photos": [["ride/img/randall-t1", "Front", "July 2001"], ["ride/img/randall-t2", "Another view", "July 2001"]], "notes": "Bought from the Randalls by the Latham family, who kept it for many years. The owners ran what was called a “city man’s farm.” The house has been altered considerably over the years; the large pillars at the front were among the changes.", "src": "Present Past in Birmingham (1969)", "style": "", "q": {"text": "Which feature at the front was a later addition?", "opts": ["The large pillars", "The chimney", "The front door"], "a": 0}, "lost": false, "puzzle": "", "type": "Pioneer", "rarity": "Rare", "street": "Southfield Rd.", "clue": "A city man’s farm that grew pillars."}, {"tour": "ride", "id": "ride-kingargus", "sid": "kingargus", "name": "King-Argus House", "addr": "743 W. Frank St.", "year": 1880, "yearLabel": "1880", "lat": 42.54164, "lon": -83.22223, "archive": [], "photos": [["ride/img/kingargus-t1", "Straight on, down the cobblestone walk", "June 2001"], ["ride/img/kingargus-t2", "From the corner", "June 2001"], ["ride/img/kingargus-t3", "Front", "July 2001"]], "notes": "Built in 1880. A two-story house with a small columned portico at the center door, reached by a cobblestone walk through a gap in the picket fence.", "src": "2001 tour list", "style": "", "q": {"text": "What shelters the front door?", "opts": ["A columned portico", "A full-width porch", "A glass vestibule"], "a": 0}, "lost": false, "puzzle": "", "type": "Victorian", "rarity": "Uncommon", "street": "W. Frank St.", "clue": ""}, {"tour": "ride", "id": "ride-hdaniels", "sid": "hdaniels", "name": "Hiram Daniels House", "addr": "1128 Pierce St.", "year": 1850, "yearLabel": "c. 1850", "lat": 42.53864, "lon": -83.21458, "archive": [], "photos": [["ride/img/hdaniels-t1", "The front, with the center entrance", "June 2001"], ["ride/img/hdaniels-t2", "From across the corner", "June 2001"], ["ride/img/hdaniels-t3", "Front", "July 2001"]], "notes": "Built about 1850 for Hiram Daniels: a long, low, symmetrical front with the entrance at the center and evenly spaced windows to either side, on a corner lot.", "src": "2001 tour list", "style": "", "q": {"text": "Where is the front entrance?", "opts": ["In the center of the front", "At one end", "On the side street"], "a": 0}, "lost": false, "puzzle": "Two Daniels houses on this ride, Benjamin’s on Harmon and Hiram’s here, and John Daniels in Greenwood Cemetery. Related? If you know, add a field report.", "type": "Pioneer", "rarity": "Rare", "street": "Pierce St.", "clue": "A long, low house with its door dead center, on a corner far down Pierce."}, {"tour": "ride", "id": "ride-pschlaack", "sid": "pschlaack", "name": "Phillip Schlaack House", "addr": "839 Knox St.", "year": 1896, "yearLabel": "1896", "lat": 42.54794, "lon": -83.20859, "archive": [], "photos": [["ride/img/pschlaack-t1", "Front", "July 2001"], ["ride/img/pschlaack-t2", "Another view", "July 2001"]], "notes": "Built in 1896 for Phillip Schlaack.", "src": "2001 tour list", "style": "", "q": null, "lost": false, "puzzle": "The Schlaack name also appears on the Schlaack Building downtown (205 N. Old Woodward) and the Frank Schlaack House on Bates Street. Frank ran a meat market at Maple and Woodward for thirty years. How was Phillip related?", "type": "Victorian", "rarity": "Uncommon", "street": "Knox St.", "clue": "A third Schlaack, out on Knox Street."}, {"tour": "ride", "id": "ride-depot", "sid": "depot", "name": "Grand Trunk Western Railroad Depot", "addr": "245 S. Eton St.", "year": 1931, "yearLabel": "1931", "lat": 42.5387, "lon": -83.1955, "archive": [["ride/img/depot-a1", "The Grand Trunk station", "1969 · Present Past in Birmingham"]], "photos": [["ride/img/depot-t1", "The depot", "July 2001"], ["ride/img/depot-t2", "Trackside", "July 2001"], ["ride/img/depot-t3", "Detail", "July 2001"]], "notes": "Birmingham’s Grand Trunk Western Railroad depot, built in 1931 and listed on the National Register of Historic Places. End of the ride.", "src": "2001 tour list; City of Birmingham designated list (National Register of Historic Places)", "style": "", "q": null, "lost": false, "puzzle": "", "type": "Civic", "rarity": "Common", "street": "S. Eton St.", "clue": "Trains stopped here on the Grand Trunk."}], "exp": [{"id": "wander", "name": "The Wandering Houses", "blurb": "Four houses that refused to stay put. Find every one that was picked up and moved.", "sites": ["walk-hunter", "walk-raynale", "walk-irving", "walk-cinderella"]}, {"id": "stone", "name": "Carved in Stone", "blurb": "Builders who signed their work. Read each name cut into a façade.", "sites": ["downtown-wabeek", "downtown-oneal", "downtown-johnstonshaw", "downtown-erity", "downtown-quarton"]}, {"id": "daniels", "name": "The Daniels Line", "blurb": "Two Daniels houses and a Revolutionary War grave. Is there a thread between them?", "sites": ["ride-bdaniels", "ride-hdaniels", "ride-greenwood"]}, {"id": "quarton", "name": "The Quarton Legacy", "blurb": "A farm family whose name ended up on a road, a school, a store block and two houses.", "sites": ["downtown-quarton", "ride-quartonhomestead", "ride-fredquarton"]}, {"id": "hallfarm", "name": "The Hall Family Farm", "blurb": "One four-acre farm, split among three daughters. Find the homestead and the houses built beside it.", "sites": ["walk-johnhall", "walk-koontz", "walk-frankschlaack"]}, {"id": "schlaack", "name": "Three Schlaacks", "blurb": "A store block, a butcher’s house and a house on Knox. Track the Schlaack name across town.", "sites": ["downtown-schlaack", "walk-frankschlaack", "ride-pschlaack"]}, {"id": "wooster", "name": "The Wooster Trail", "blurb": "From a downtown storefront to an 1844 farmhouse with grille-work under its eaves.", "sites": ["downtown-wooster", "ride-wooster"]}, {"id": "civic", "name": "The Civic Center", "blurb": "The 1920s plan that gave the town its heart: city hall, library, post office and community house.", "sites": ["downtown-municipal", "walk-library", "walk-postoffice", "walk-communityhouse"]}, {"id": "founders", "name": "First Settlers", "blurb": "The oldest ground in town: houses and graves from before 1860.", "sites": ["walk-hunter", "ride-greenwood", "walk-trollop", "walk-raynale", "walk-chatfield", "ride-quartonhomestead"]}, {"id": "d-down", "name": "Downtown", "blurb": "All 27 designated buildings of the central business district.", "district": "downtown"}, {"id": "d-walk", "name": "Bates, Townsend & the Mill Pond", "blurb": "All 39 houses and public buildings south and west of downtown.", "district": "walk"}, {"id": "d-ride", "name": "The Outskirts", "blurb": "All 12 outlying sites, from Quarton Road to the Grand Trunk depot.", "district": "ride"}]};
+const SITES = DATA.sites, EXPS = DATA.exp;
+const $ = s => document.querySelector(s);
+const IMG = f => f.startsWith("/") ? f : "img/" + f + ".jpg";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const TYPE_COLORS = { "Commercial": "#3CC1C9", "Civic": "#7FA7FF", "Victorian": "#F07C6C", "Queen Anne": "#F28BC0", "Italianate": "#F5A35C", "Farmhouse": "#9CCB5E", "Pioneer": "#E2C25C", "Craftsman": "#C9A27E", "Colonial": "#8EC7F5", "Second Empire": "#B79CF2", "Early modern": "#5ED1A6", "Townhouse": "#D9D3C4", "Sacred ground": "#B8C2BF" };
+const RAR_XP = { Common: 0, Uncommon: 25, Rare: 60, Legendary: 150, Lost: 100 };
+const RANKS = [[0, "Newcomer"], [500, "Regular"], [1500, "Townie"], [3500, "Local Legend"], [7000, "Living Landmark"]];
+SITES.forEach((s, i) => { s.no = String(i + 1).padStart(3, "0"); });
+const BY = Object.fromEntries(SITES.map(s => [s.id, s]));
+EXPS.forEach(e => { if (e.district) e.sites = SITES.filter(s => s.tour === e.district).map(s => s.id); });
+
+/* ---------- state (per explorer, this browser) ---------- */
+const KEY = "bville-exp-";
+const load = (k, d) => { try { const v = localStorage.getItem(KEY + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+const PROG_KEYS = ["found", "answers", "hints", "relics", "uploads", "firsts"];
+const save = (k, v) => { try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) {} if (PROG_KEYS.includes(k)) queueProgress(); };
+let found = load("found", {}), answers = load("answers", {}), hints = load("hints", {}), relics = load("relics", {}), uploads = load("uploads", {}), firsts = load("firsts", {});
+const DIG_MILESTONES = [[5, 100, "Field Photographer"], [10, 200, "Site Recorder"], [25, 500, "Master Excavator"], [78, 1500, "Keeper of Layer 3"]];
+function xp(){
+  let x = 0;
+  for (const id in found) { const s = BY[id]; if (!s) continue; x += 100 + RAR_XP[s.rarity] + (found[id].field ? 50 : 0); }
+  for (const k in answers) if (answers[k].ok) x += 25;
+  for (const id in hints) x -= 20;
+  for (const id in relics) x += 200;
+  for (const id in uploads) x += 75;
+  for (const id in firsts) x += 150;
+  const nd = Object.keys(uploads).length; DIG_MILESTONES.forEach(([n, b]) => { if (nd >= n) x += b; });
+  x += worldXP();
+  return Math.max(0, x);
+}
+function rankOf(x){ let r = RANKS[0], next = null; for (let i = 0; i < RANKS.length; i++) { if (x >= RANKS[i][0]) { r = RANKS[i]; next = RANKS[i + 1] || null; } } return [r, next]; }
+function paintTop(){
+  const x = xp(), [r, next] = rankOf(x);
+  $("#rank").innerHTML = esc(r[1]) + "<small>Rank</small>";
+  $("#found").textContent = Object.keys(found).length;
+  countTo(x); queueScore(x, r[1]);
+  $("#xpbar").style.width = (next ? Math.round((x - r[0]) / (next[0] - r[0]) * 100) : 100) + "%";
+  $("#xpbar").parentNode.title = next ? `${next[0] - x} Marthas to ${next[1]}` : "Top rank";
+}
+let toastT;
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; t.style.animation = "none"; void t.offsetWidth; t.style.animation = ""; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+
+/* ---------- tabs ---------- */
+let tab = load("tab", "map");
+function showTab(t){ tab = t; save("tab", t); document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t)); $("#p-map").hidden = t !== "map"; $("#p-journal").hidden = t !== "journal"; $("#p-exp").hidden = t !== "exp"; $("#p-board").hidden = t !== "board"; render(); animatePanel("#p-" + t); if (t === "journal") { const g = $("#grid"); g.classList.remove("enter"); void g.offsetWidth; g.classList.add("enter"); setTimeout(() => g.classList.remove("enter"), 2500); } if (t === "map") { $("#map").classList.add("intro"); setTimeout(() => $("#map").classList.remove("intro"), 1400); } if (t === "exp") { const e = $("#exps"); e.classList.add("exps-in"); setTimeout(() => e.classList.remove("exps-in"), 1200); } }
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+/* ---------- map ---------- */
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, a, p){ const n = document.createElementNS(NS, tag); for (const k in a) n.setAttribute(k, a[k]); if (p) p.appendChild(n); return n; }
+const AREAS = [["town", "Whole town", null], ["downtown", "Downtown", s => s.tour === "downtown"], ["walk", "Bates & Mill Pond", s => s.tour === "walk"], ["ride", "Outskirts", s => s.tour === "ride"]];
+let area = load("area", "downtown");
+const STREETS = [
+  [[[42.5467,-83.2400],[42.5467,-83.1940]],"MAPLE"],[[[42.5620,-83.2165],[42.5467,-83.2140],[42.5335,-83.2128]],"OLD WOODWARD"],
+  [[[42.5620,-83.2216],[42.5335,-83.2216]],"SOUTHFIELD"],[[[42.5533,-83.2330],[42.5533,-83.2150]],"OAK"],[[[42.5600,-83.2340],[42.5600,-83.2160]],"QUARTON"],
+  [[[42.5467,-83.2149],[42.5335,-83.2149]],"PIERCE"],[[[42.5467,-83.21715],[42.5418,-83.21715]],"BATES"],
+  [[[42.5452,-83.2215],[42.5452,-83.2125]],"MERRILL"],[[[42.5444,-83.2215],[42.5444,-83.2150]],"TOWNSEND"],[[[42.5437,-83.2215],[42.5437,-83.2150]],"BROWN"],
+  [[[42.5474,-83.2212],[42.5474,-83.2160]],"WILLITS"],[[[42.5560,-83.2050],[42.5335,-83.1960]],"WOODWARD"],[[[42.5440,-83.1955],[42.5335,-83.1955]],"ETON"]];
+function drawMap(){
+  const m = $("#map"); m.innerHTML = "";
+  const W = 400, H = 420, PAD = 24;
+  const pick = (AREAS.find(a => a[0] === area) || AREAS[0])[2];
+  const pts = SITES.filter(s => !pick || pick(s));
+  const la0 = Math.max(...pts.map(s => s.lat)), la1 = Math.min(...pts.map(s => s.lat)), lo0 = Math.min(...pts.map(s => s.lon)), lo1 = Math.max(...pts.map(s => s.lon));
+  const C = Math.cos(la0 * Math.PI / 180), K = Math.min((W - 2 * PAD) / Math.max((lo1 - lo0) * C, 1e-6), (H - 2 * PAD) / Math.max(la0 - la1, 1e-6));
+  const OX = (W - (lo1 - lo0) * C * K) / 2, OY = (H - (la0 - la1) * K) / 2;
+  const PX = (la, lo) => [OX + (lo - lo0) * C * K, OY + (la0 - la) * K];
+  el("rect", { x: 0, y: 0, width: W, height: H, fill: "#12201F" }, m);
+  // contour texture
+  for (let i = 0; i < 9; i++) el("circle", { cx: 60 + i * 37, cy: 380 - i * 31, r: 120 + i * 9, fill: "none", stroke: "#18292A", "stroke-width": 1 }, m);
+  const sw = area === "town" ? 3 : 7;
+  STREETS.forEach(([p, lab]) => {
+    const P = p.map(([a, b]) => PX(a, b));
+    el("path", { d: "M" + P.map(q => q.map(v => v.toFixed(1)).join(" ")).join(" L"), class: "st", "stroke-width": sw }, m);
+    const [a, b] = [P[0], P[P.length - 1]]; let ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI; if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
+    const t = el("text", { class: "slabel", "font-size": area === "town" ? 7 : 8.5, transform: `translate(${(a[0] + (b[0] - a[0]) * .12).toFixed(1)} ${(a[1] + (b[1] - a[1]) * .12).toFixed(1)}) rotate(${ang.toFixed(1)}) translate(3 -6)` }, m); t.textContent = lab;
+  });
+  // place markers, nudge apart
+  const R = area === "town" ? 6 : 10;
+  const mk = pts.map(s => { const [x, y] = PX(s.lat, s.lon); return { s, x, y }; });
+  for (let it = 0; it < 40; it++) for (let i = 0; i < mk.length; i++) for (let j = i + 1; j < mk.length; j++) { const a = mk[i], b = mk[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), need = 2 * R + 2; if (d < need) { const p = (need - d) / 2, ux = d ? dx / d : 1, uy = d ? dy / d : 0; a.x -= ux * p; a.y -= uy * p; b.x += ux * p; b.y += uy * p; } }
+  mk.forEach(o => { o.x = Math.max(R + 2, Math.min(W - R - 2, o.x)); o.y = Math.max(R + 2, Math.min(H - R - 2, o.y)); });
+  mk.forEach(({ s, x, y }) => {
+    const f = !!found[s.id], wv = world().st[s.id];
+    const g = el("g", { class: "mk" + (f ? " found" : "") + (s.lost ? " lost" : "") + (wv.threat ? " threat" : "") + (wv.status === "demolished" ? " razed" : ""), transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})`, style: `--d:${(SITES.indexOf(s) % 13 / 13).toFixed(2)}`, tabindex: 0, role: "button", "aria-label": f ? `${s.no} ${s.name}` : `Rumored site ${s.no} on ${s.street}` }, m);
+    el("circle", { r: R, class: "ring" }, g);
+    const t = el("text", { class: "q", "font-size": f ? R * 0.9 : R * 1.1 }, g); t.textContent = wv.status === "demolished" ? "!" : f ? "✕" : "?";
+    g.onclick = () => openSite(s.id);
+    g.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSite(s.id); } };
+    g.onmouseenter = e => tipShow(e, f ? `${s.no} · ${s.name}` : `${s.no} · rumored site on ${s.street}`); g.onmousemove = tipMove; g.onmouseleave = () => $("#tip").hidden = true;
+  });
+  // compass
+  const c = el("g", { transform: `translate(${W - 26} 30)` }, m); el("circle", { r: 15, fill: "none", stroke: "#3A5156" }, c); el("path", { d: "M0 -12 L4 0 L0 -3 L-4 0Z", fill: "var(--torch)" }, c); const n = el("text", { y: 24, "text-anchor": "middle", class: "slabel", "font-size": 8 }, c); n.textContent = "N";
+  const z = $(".zooms"); z.innerHTML = AREAS.map(([k, lab]) => `<button class="chip" data-a="${k}" aria-pressed="${k === area}">${lab}</button>`).join("");
+  z.querySelectorAll(".chip").forEach(b => b.onclick = () => { area = b.dataset.a; save("area", area); drawMap(); });
+}
+function tipShow(e, t){ const d = $("#tip"); d.textContent = t; d.hidden = false; tipMove(e); }
+function tipMove(e){ const d = $("#tip"); d.style.left = Math.min(e.clientX + 14, innerWidth - 250) + "px"; d.style.top = (e.clientY + 14) + "px"; }
+
+/* ---------- journal ---------- */
+let filt = "all";
+function cover(s){ const p = s.photos[0] || s.archive[0]; return p ? IMG(p[0]) : ""; }
+function typeChip(t){ return `<span class="ty" style="background:${TYPE_COLORS[t] || "#ccc"}">${esc(t)}</span>`; }
+function drawJournal(){
+  const F = [["all", "All"], ["found", "Found"], ["unfound", "Still hidden"], ["downtown", "Downtown"], ["walk", "Bates & Mill Pond"], ["ride", "Outskirts"]];
+  $("#filters").innerHTML = F.map(([k, l]) => `<button class="chip" data-f="${k}" aria-pressed="${k === filt}">${l}</button>`).join("");
+  $("#filters").querySelectorAll(".chip").forEach(b => b.onclick = () => { filt = b.dataset.f; drawJournal(); });
+  const list = SITES.filter(s => filt === "all" || (filt === "found" ? found[s.id] : filt === "unfound" ? !found[s.id] : s.tour === filt));
+  $("#grid").innerHTML = list.map(s => { const f = !!found[s.id], wv = world().st[s.id];
+    return `<button class="tile${f ? "" : " unk"}${wv.status === "demolished" ? " razed" : ""}" data-id="${s.id}" type="button"><img class="ph" src="${cover(s)}" alt="" loading="lazy">${f ? "" : `<span class="qm">?</span>`}<span class="no">${s.no}</span>${wv.threat ? `<span class="tflag">Under threat</span>` : wv.status === "demolished" ? `<span class="tflag lost">Now: ${esc(wv.rogue.name)}</span>` : ""}<span class="body"><span class="nm">${f ? esc(s.name) : "Somewhere on " + esc(s.street)}</span><span class="badges">${typeChip(s.type)}<span class="ra ${s.rarity}">${s.rarity}</span></span></span></button>`; }).join("") || `<p class="hint">Nothing here yet. Open the map and pick a rumored site to start hunting.</p>`;
+  $("#grid").querySelectorAll(".tile").forEach((b, i) => { b.onclick = () => openSite(b.dataset.id); b.style.setProperty("--i", Math.min(i, 24)); if (BY[b.dataset.id].rarity === "Legendary" && found[b.dataset.id]) b.classList.add("legend-t"); });
+}
+
+/* ---------- expeditions ---------- */
+const RELIC = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>`;
+function checkRelics(){
+  EXPS.forEach(e => { if (!relics[e.id] && e.sites.every(id => found[id])) { relics[e.id] = Date.now(); save("relics", relics); toast(`Relic recovered: ${e.name} (+200 Marthas)`); setTimeout(() => celebrate("Relic recovered!", e.name), 1500); } });
+}
+function digCard(){
+  const nd = Object.keys(uploads).length, next = DIG_MILESTONES.find(([n]) => nd < n);
+  return `<article class="exp${next ? "" : " done"}"><h3>Layer 3: Excavators</h3><p>Photograph sites as they stand today. 75 Marthas for your first post at each site, 150 more if no one has posted there yet, and badges as your count grows.</p>
+    <div class="bar"><i style="width:${Math.round(nd / (next ? next[0] : nd || 1) * 100)}%"></i></div>
+    <div class="hint">${nd} site${nd === 1 ? "" : "s"} excavated${next ? ` · ${next[0] - nd} more for the ${next[2]} badge (+${next[1]} Marthas)` : " · every badge earned"}</div>
+    <div class="relic" style="flex-wrap:wrap">${DIG_MILESTONES.filter(([n]) => nd >= n).map(([, , name]) => `<span style="display:inline-flex;gap:6px;align-items:center">${RELIC}${name}</span>`).join("")}</div></article>`;
+}
+function drawExps(){
+  $("#exps").innerHTML = syndicateCard() + digCard() + EXPS.map(e => { const n = e.sites.filter(id => found[id]).length, done = !!relics[e.id];
+    return `<article class="exp${done ? " done" : ""}"><h3>${esc(e.name)}</h3><p>${esc(e.blurb)}</p><div class="bar"><i style="width:${Math.round(n / e.sites.length * 100)}%"></i></div>
+      <div class="hint">${n} of ${e.sites.length} sites found</div>
+      ${e.sites.length <= 8 ? `<div class="mini">${e.sites.map(id => `<button data-id="${id}" class="${found[id] ? "f" : ""}" title="${found[id] ? esc(BY[id].name) : "Hidden site " + BY[id].no}" type="button">${found[id] ? "✕" : BY[id].no}</button>`).join("")}</div>` : ""}
+      ${done ? `<div class="relic">${RELIC}Relic recovered</div>` : ""}</article>`; }).join("");
+  $("#exps").querySelectorAll(".mini button").forEach(b => b.onclick = () => openSite(b.dataset.id));
+}
+function render(){ paintTop(); if (tab === "map") { drawAlert(); drawMap(); } if (tab === "journal") drawJournal(); if (tab === "exp") drawExps(); if (tab === "board") drawBoard(); }
+
+/* ---------- dossier ---------- */
+let cur = null, layer = "archive", shot = 0;
+function hasHint(s){ return !!hints[s.id] || !!found[s.id]; }
+function openSite(id){ if (pending) { URL.revokeObjectURL(pending.url); pending = null; } cur = BY[id]; const s = cur; subscribeToday(); layer = s.archive.length ? "archive" : "y2001"; shot = 0; paintCard(); $("#sheet").hidden = false; document.body.style.overflow = "hidden"; setTimeout(() => $("#x")?.focus(), 30); subscribeReports(); }
+function closeSite(){ $("#sheet").hidden = true; document.body.style.overflow = ""; unsubReports(); unsubToday(); render(); }
+$("#sheet").addEventListener("click", e => { if (e.target.id === "sheet") closeSite(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#sheet").hidden) closeSite(); });
+function decadeQ(s){ const d = Math.floor(s.year / 10) * 10, sh = [[-30,-10,0,20],[-20,0,10,30],[-10,0,20,40],[0,10,30,50]][[...s.id].reduce((a, c) => a + c.charCodeAt(0), 0) % 4], opts = sh.map(x => (d + x) + "s"); return { kind: "year", label: "Date the find", text: "Which decade was it built?", opts, a: opts.indexOf(d + "s"), reveal: "Built " + s.yearLabel + "." }; }
+function paintCard(){
+  const s = cur, f = !!found[s.id], c = $("#card");
+  const todayList = todayDocs.map(d => ["/api/img/" + d.asset, (d.text || "Explorer’s photo") + " — " + ((d.author && pnames[d.author]) || "an explorer"), new Date(d.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })]);
+  const list = layer === "archive" ? s.archive : layer === "y2001" ? s.photos : todayList;
+  const ph = list[shot] || list[0];
+  const heroPhoto = f ? ph : (s.photos[0] || s.archive[0]);
+  const idx = SITES.indexOf(s);
+  const tests = [];
+  if (!f) {
+    if (s.q) tests.push({ kind: "field", label: "Prove you’re there", text: s.q.text, opts: s.q.opts, a: s.q.a });
+  } else {
+    if (s.year) tests.push(decadeQ(s));
+  }
+  const ans = k => answers[s.id + ":" + k];
+  const testHTML = tests.map((t, k) => { const A = ans(t.kind);
+    return `<div class="box"><h3>${esc(t.label)}</h3><p class="q">${esc(t.text)}</p>` + (A
+      ? `<div class="opts">${t.opts.map((o, j) => `<button class="opt ${j === t.a ? "right" : j === A.pick ? "wrong" : ""}" disabled type="button">${esc(o)}</button>`).join("")}</div><div class="verdict">${A.ok ? "Correct. +25 Marthas." : "Not quite."} ${esc(t.reveal || "")}</div>`
+      : `<div class="opts" data-k="${k}">${t.opts.map((o, j) => `<button class="opt" data-j="${j}" type="button">${esc(o)}</button>`).join("")}</div><div class="verdict" aria-live="polite"></div>`) + `</div>`; }).join("");
+  const exps = EXPS.filter(e => !e.district && e.sites.includes(s.id));
+  c.innerHTML = `
+    <div class="bar2"><span class="dno">SITE ${s.no} · ${f ? "DISCOVERED" : "UNDISCOVERED"}</span><button class="btn" id="x" type="button">Close</button></div>
+    <h2 id="d-name" class="${f ? "" : "unk"}">${f ? esc(s.name) : "Unknown site"}</h2>
+    <div class="badges">${typeChip(s.type)}<span class="ra ${s.rarity}">${s.rarity}</span>${s.lost ? `<span class="ra Lost">Original is gone</span>` : ""}</div>
+    <div class="hero${f ? "" : " unk"}" id="hero">${heroPhoto ? `<img id="heroimg" src="${IMG(heroPhoto[0])}" alt="${f ? esc(heroPhoto[1]) : "Hidden site"}" onload="if(this.naturalWidth<160)this.classList.add('tiny')" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'hint',style:'padding:50px 16px;text-align:center',textContent:'This photo couldn’t load. Try again in a moment.'}))">` : `<div style="padding:60px 16px;text-align:center" class="hint">${f && layer === "today" ? "Layer 3 is still buried. Add today’s photo below." : "No photo yet"}</div>`}</div>
+    ${f ? `
+      <div class="layers" role="group" aria-label="Excavation layers">
+        <button class="layer${s.archive.length ? "" : " empty"}" data-l="archive" aria-pressed="${layer === "archive"}" type="button">Layer 1 · Then</button>
+        <button class="layer${s.photos.length ? "" : " empty"}" data-l="y2001" aria-pressed="${layer === "y2001"}" type="button">Layer 2 · 2001</button>
+        <button class="layer${todayList.length ? "" : " empty"}" data-l="today" aria-pressed="${layer === "today"}" type="button">Layer 3 · Today${todayList.length ? " (" + todayList.length + ")" : ""}</button>
+      </div>
+      ${ph ? `<div class="cap"><span>${esc(ph[2])} · ${esc(ph[1])}</span><span>${(list.indexOf(ph) + 1)} / ${list.length}</span></div>${list.length > 1 ? `<div class="strip">${list.map((p, j) => `<img src="${IMG(p[0])}" alt="${esc(p[1])}" data-j="${j}" aria-current="${j === shot}">`).join("")}</div>` : ""}`
+        : `<p class="hint" style="margin-top:8px">${layer === "today" ? "No one has excavated this layer yet. Be the first: add today’s photo below." : "Nothing recovered from this layer yet."}</p>`}
+      ${layer === "today" ? uploadBox(s) : ""}
+    ` : ""}
+    <div class="box"><h3>${f ? "The clue that led you here" : "The clue"}</h3><p class="clue">${esc(s.clue || defaultClue(s))}</p>
+      <div class="row2"><span class="hint">Search area: <strong>${esc(s.street)}</strong>${hasHint(s) ? ` · <strong>${esc(s.addr)}</strong>` : ""}</span></div>
+      <div class="row2">${hasHint(s) ? `<a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.addr.split(" / ")[0] + ", Birmingham, MI")}" target="_blank" rel="noopener">Directions</a>` : `<button class="btn" id="hintbtn" type="button">Reveal the exact address (costs 20 Marthas)</button>`}</div>
+    </div>
+    ${!f ? testHTML + `<div class="box"><h3>${s.q ? "No luck? Check in instead" : "Prove you’re there"}</h3><p class="hint">${s.q ? "If you can’t make out the detail, check in when you’re standing at the site. You’ll miss the 50-Martha field bonus." : "There’s no field test for this site yet. Check in when you’re standing in front of it."}</p><div class="row2"><button class="btn go" id="checkin" type="button">I’m standing here</button></div></div>` : ""}
+    ${f ? `
+      <div class="stats"><div class="stat"><b>${esc(s.yearLabel || "?")}</b><span>Built</span></div><div class="stat"><b>${s.year ? (new Date().getFullYear() - s.year) : "?"}</b><span>Years old</span></div><div class="stat"><b>${s.archive.length + s.photos.length}</b><span>Photos found</span></div></div>
+      <div class="box"><h3>From the archive</h3><p class="story" id="story"></p>${s.style ? `<p class="src">Style, per the archive: ${esc(s.style)}</p>` : ""}<p class="src" id="srcline"></p></div>
+      ${s.puzzle ? `<div class="box"><h3>Unsolved mystery</h3><p class="story" id="puzzle"></p></div>` : ""}
+      ${testHTML}` : ""}
+    ${defendBox(s)}
+    ${exps.length ? `<div class="box"><h3>Part of ${exps.length > 1 ? "these expeditions" : "an expedition"}</h3><p class="story">${exps.map(e => `<strong>${esc(e.name)}</strong> (${e.sites.filter(id => found[id]).length}/${e.sites.length})`).join(" · ")}</p></div>` : ""}
+    <div class="box"><h3>Field reports</h3><p class="hint">${f ? "How does it look today? Changes, family history and memories all help the next explorer." : "Notes from other explorers. Careful: some may give the site away."}</p><div id="reportUI"></div><ul class="reports" id="reports"></ul></div>
+    <div class="bar2" style="margin-top:20px"><button class="btn" id="prev" type="button" ${idx === 0 ? "disabled" : ""}>Previous site</button><button class="btn go" id="next" type="button" ${idx === SITES.length - 1 ? "disabled" : ""}>Next site</button></div>`;
+  if (f) { $("#story").textContent = s.notes || "No archive text yet for this site."; $("#srcline").textContent = s.src ? "Source: " + s.src : ""; if (s.puzzle) $("#puzzle").textContent = s.puzzle; }
+  $("#x").onclick = closeSite;
+  $("#prev").onclick = () => { openSite(SITES[idx - 1].id); $("#card").scrollTop = 0; };
+  $("#next").onclick = () => { openSite(SITES[idx + 1].id); $("#card").scrollTop = 0; };
+  c.querySelectorAll(".layer").forEach(b => b.onclick = () => { layer = b.dataset.l; shot = 0; paintCard(); });
+  wireDefend(s);
+  wireUpload(s);
+  c.querySelectorAll(".strip img").forEach(im => im.onclick = () => { shot = +im.dataset.j; paintCard(); });
+  const hb = $("#hintbtn"); if (hb) hb.onclick = () => { hints[s.id] = Date.now(); save("hints", hints); paintCard(); paintTop(); };
+  const ci = $("#checkin"); if (ci) ci.onclick = () => discover(false);
+  c.querySelectorAll(".opts[data-k] .opt").forEach(b => b.onclick = () => answer(tests[+b.parentNode.dataset.k], +b.dataset.j, b));
+  renderReportUI(); paintReports();
+}
+function defaultClue(s){
+  const era = s.year < 1860 ? "a pioneer-era" : s.year < 1900 ? "a nineteenth-century" : "an early twentieth-century";
+  return `Somewhere on ${s.street} stands ${era} ${s.type === "Commercial" ? "storefront block" : s.type === "Civic" ? "public building" : "house"} raised around ${s.yearLabel || "the turn of the century"}.`;
+}
+function answer(t, j, btn){
+  const s = cur, ok = j === t.a;
+  if (t.kind === "field") {
+    if (ok) { answers[s.id + ":field"] = { pick: j, ok: true }; save("answers", answers); discover(true); return; }
+    btn.classList.add("wrong"); btn.disabled = true; btn.parentNode.nextElementSibling.textContent = "That’s not what’s on the building. Look again."; return;
+  }
+  answers[s.id + ":" + t.kind] = { pick: j, ok }; save("answers", answers);
+  if (ok) toast("+25 Marthas"); const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; paintTop();
+}
+function discover(field){
+  const s = cur; found[s.id] = { at: Date.now(), field }; save("found", found);
+  layer = s.archive.length ? "archive" : "y2001"; shot = 0;
+  paintCard(); $("#card").scrollTop = 0; const h = $("#heroimg"); if (h) h.classList.add("reveal");
+  toast(`Discovered: ${s.name}! +${100 + RAR_XP[s.rarity] + (field ? 50 : 0)} Marthas`); celebrate("Discovered!", s.name);
+  checkRelics(); paintTop();
+}
+
+/* ---------- FX: fireflies, torchlight, bursts and counters ---------- */
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+(function fireflies(){
+  const c = document.getElementById("fx"); if (!c || RM) return; const x = c.getContext("2d"); let W, H, P = [];
+  const COLS = ["255,190,80", "46,230,166", "76,201,240", "199,125,255"];
+  function size(){ const d = Math.min(2, devicePixelRatio || 1); W = c.width = innerWidth * d; H = c.height = innerHeight * d; c.dataset.d = d; }
+  size(); addEventListener("resize", size);
+  const N = Math.round(Math.min(55, innerWidth / 18));
+  for (let i = 0; i < N; i++) P.push({ x: Math.random(), y: Math.random(), vx: (Math.random() - .5) * .00025, vy: -(.0001 + Math.random() * .00035), r: .6 + Math.random() * 1.8, ph: Math.random() * 6.28, c: COLS[i % 4 === 0 ? 0 : i % 7 === 0 ? 3 : i % 3 === 0 ? 2 : i % 2 ? 0 : 1] });
+  function tick(t){ if (!document.hidden) { x.clearRect(0, 0, W, H); const d = +c.dataset.d;
+      for (const p of P) { p.x += p.vx + Math.sin(t / 2000 + p.ph) * .00012; p.y += p.vy; if (p.y < -.02) { p.y = 1.02; p.x = Math.random(); } if (p.x < -.02) p.x = 1.02; if (p.x > 1.02) p.x = -.02;
+        const a = .25 + .55 * (.5 + .5 * Math.sin(t / 600 + p.ph * 3)), R = p.r * d;
+        const g = x.createRadialGradient(p.x * W, p.y * H, 0, p.x * W, p.y * H, R * 6); g.addColorStop(0, `rgba(${p.c},${a})`); g.addColorStop(1, `rgba(${p.c},0)`);
+        x.fillStyle = g; x.beginPath(); x.arc(p.x * W, p.y * H, R * 6, 0, 6.29); x.fill(); } }
+    requestAnimationFrame(tick); }
+  requestAnimationFrame(tick);
+})();
+// torchlight follows the pointer
+if (!RM) addEventListener("pointermove", e => { document.body.style.setProperty("--mx", (e.clientX / innerWidth * 100).toFixed(1) + "%"); document.body.style.setProperty("--my", (e.clientY / innerHeight * 100 - 30).toFixed(1) + "%"); }, { passive: true });
+// coin and spark burst
+function burst(opts = {}){
+  if (RM) return; const c = document.getElementById("burst"), x = c.getContext("2d"), d = Math.min(2, devicePixelRatio || 1);
+  c.width = innerWidth * d; c.height = innerHeight * d; const cx = (opts.x ?? innerWidth / 2) * d, cy = (opts.y ?? innerHeight * .42) * d;
+  const bad = opts.bad, cols = bad ? ["#FF5E3A", "#FF9A6B", "#7A6A5E", "#B9A89A"] : ["#FFE3A6", "#FFB43C", "#2EE6A6", "#4CC9F0", "#C77DFF", "#FF7A3D"];
+  const P = []; const n = opts.n || 110;
+  for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, v = (4 + Math.random() * 11) * d; P.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 5 * d, s: (3 + Math.random() * 6) * d, rot: Math.random() * 6, vr: (Math.random() - .5) * .4, coin: !bad && i % 4 === 0, c: cols[i % cols.length], life: 1 }); }
+  const t0 = performance.now();
+  (function f(t){ const k = (t - t0) / 1700; x.clearRect(0, 0, c.width, c.height); if (k > 1) return;
+    for (const p of P) { p.vy += .35 * d; p.vx *= .985; p.vy *= .985; p.x += p.vx; p.y += p.vy; p.rot += p.vr; x.save(); x.globalAlpha = Math.max(0, 1 - k * k); x.translate(p.x, p.y); x.rotate(p.rot);
+      if (p.coin) { const r = p.s * 1.1, sx = Math.abs(Math.cos(p.rot * 2)); x.scale(Math.max(.15, sx), 1); x.fillStyle = "#FFB43C"; x.beginPath(); x.arc(0, 0, r, 0, 6.29); x.fill(); x.strokeStyle = "#A85B16"; x.lineWidth = d; x.stroke(); x.fillStyle = "#5A3306"; x.font = `${r * 1.2}px "Alfa Slab One",serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("M", 0, r * .08); }
+      else if (bad) { x.fillStyle = p.c; x.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * .7); }
+      else { x.fillStyle = p.c; x.fillRect(-p.s / 2, -p.s / 5, p.s, p.s / 2.5); }
+      x.restore(); }
+    requestAnimationFrame(f); })(t0);
+}
+function stamp(big, small, bad){
+  const s = document.createElement("div"); s.className = "stamp" + (bad ? " bad" : ""); s.innerHTML = `<b>${esc(big)}</b><span>${esc(small)}</span>`;
+  document.body.appendChild(s); setTimeout(() => s.remove(), RM ? 1400 : 2000);
+}
+function celebrate(big, small){ burst(); stamp(big, small); }
+// Marthas count up, with a floating +N
+let shownX = null, countRaf = 0;
+function countTo(v){
+  const el = $("#xptext"); if (shownX === null || RM) { shownX = v; el.textContent = v.toLocaleString() + " Marthas"; return; }
+  const from = shownX, diff = v - from; if (!diff) return; shownX = v;
+  if (diff > 0) { const t = $(".tally"), p = document.createElement("span"); p.className = "plus"; p.textContent = "+" + diff.toLocaleString(); t.appendChild(p); setTimeout(() => p.remove(), 1500); t.classList.remove("bump"); void t.offsetWidth; t.classList.add("bump"); }
+  cancelAnimationFrame(countRaf); const t0 = performance.now();
+  (function f(t){ const k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + diff * e).toLocaleString() + " Marthas"; if (k < 1) countRaf = requestAnimationFrame(f); })(t0);
+}
+// 3D tilt on journal tiles
+if (!RM && matchMedia("(hover:hover)").matches) {
+  document.addEventListener("pointermove", e => { const t = e.target.closest?.(".tile"); document.querySelectorAll(".tile.tilt").forEach(o => { if (o !== t) { o.classList.remove("tilt"); o.style.transform = ""; } });
+    if (!t) return; const r = t.getBoundingClientRect(), px = (e.clientX - r.left) / r.width - .5, py = (e.clientY - r.top) / r.height - .5;
+    t.classList.add("tilt"); t.style.transform = `translateY(-4px) rotateX(${(-py * 10).toFixed(1)}deg) rotateY(${(px * 12).toFixed(1)}deg)`; }, { passive: true });
+}
+function animatePanel(id){ const p = $(id); if (!p) return; p.classList.remove("panel-in"); void p.offsetWidth; p.classList.add("panel-in"); }
+
+/* ---------- The Wrecking Ball Syndicate (shared world) ---------- */
+// Raids are scheduled from a fixed launch date, so every player computes the same threats.
+// Each explorer's actions live in their own document (acts/<id>); the world is derived from everyone's actions.
+const LAUNCH = Date.UTC(2026, 9, 12, 4); // Monday, Oct 12 2026, midnight in Birmingham
+const WEEK = 7 * 864e5, SEASON = 12 * WEEK, RAIDS_PER_WEEK = 3, SAVE_AT = 100, RESTORE_AT = 600, WAKE_AT = 5;
+// Who has joined, and when: from the Martha Board (anyone with Marthas counts as an explorer).
+function joins(){ return boardRows.filter(b => (b.m || 0) > 0).map(b => b.since || b.at || 0).sort((a, b) => a - b); }
+function raidsFor(n){ return n >= 20 ? 3 : n >= 10 ? 2 : n >= WAKE_AT ? 1 : 0; }
+const DEFENSES = {
+  petition: { cost: 50, pts: 25, label: "File a petition", note: "Buys time with the planning board." },
+  review: { cost: 150, pts: 60, label: "Call a design review", note: "The Historic District Commission takes a hard look." },
+  vote: { cost: 400, pts: 100, label: "Win the vote", note: "Like 1955, when voters refused to pave Shain Park for parking." },
+  designate: { cost: 600, pts: 100, label: "Historic designation", note: "Saves it and shields it from raids for a season." } };
+const ONSITE = { photo: 40, report: 20, guard: 15 };
+const ROGUES = [
+  { name: "Lucky Maple Casino", tag: "Slots where the porch used to be. Open 24/7.", noise: 5, icon: "dice", color: "#FF6A3D" },
+  { name: "Suds-O-Rama 24-Hour Car Wash", tag: "Featuring Wavy, our 20-foot inflatable tube man.", noise: 4, icon: "car", color: "#3CC1C9" },
+  { name: "The Vape Cave", tag: "Fog machine. Neon. Mango Ice on tap.", noise: 3, icon: "cloud", color: "#B79CF2" },
+  { name: "Parking Deck #7", tag: "Five levels of concrete. Compact cars only.", noise: 3, icon: "deck", color: "#A9B3AF" },
+  { name: "Club Thunder", tag: "Bass you can feel from Shain Park, until 2 a.m.", noise: 5, icon: "note", color: "#F28BC0" },
+  { name: "QuikFuel Mega Station", tag: "24 pumps, 1 hot dog roller, 0 trees.", noise: 4, icon: "pump", color: "#F0A73A" },
+  { name: "The McMansion", tag: "9,000 square feet and three garages on a cottage lot.", noise: 2, icon: "mansion", color: "#E2C25C" },
+  { name: "Luxe Lofts", tag: "Coming soon. Since 2009.", noise: 1, icon: "fence", color: "#D9D3C4" } ];
+const ICONS = {
+  dice: '<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/>',
+  car: '<path d="M3 15l2-5.5h14L21 15v3H3z"/><circle cx="7.5" cy="18" r="1.8"/><circle cx="16.5" cy="18" r="1.8"/><path d="M8 5c0-1 1-2 2-1M12 4c0-1 1-2 2-1"/>',
+  cloud: '<path d="M7 17h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6-1A4 4 0 0 0 7 17z"/><path d="M6 20h2M11 20h2M16 20h2"/>',
+  deck: '<rect x="3" y="4" width="18" height="4"/><rect x="3" y="10" width="18" height="4"/><rect x="3" y="16" width="18" height="4"/>',
+  note: '<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+  pump: '<rect x="4" y="3" width="10" height="18" rx="1"/><rect x="6" y="6" width="6" height="4"/><path d="M14 8h3l2 3v7a1.5 1.5 0 0 1-3 0v-4h-2"/>',
+  mansion: '<path d="M2 11l6-5 4 3 4-3 6 5"/><rect x="3" y="11" width="18" height="9"/><rect x="6" y="14" width="3" height="6"/><rect x="11" y="14" width="3" height="6"/><rect x="16" y="14" width="3" height="6"/>',
+  fence: '<path d="M4 20V7l2-2 2 2v13M10 20V7l2-2 2 2v13M16 20V7l2-2 2 2v13M2 10h20M2 16h20"/>' };
+let acts = {}, actUnsub = null;
+const allActs = () => Object.entries(acts).flatMap(([uid, list]) => list.map(a => ({ ...a, uid })));
+const myActs = () => (myId && acts[myId]) || [];
+function seeded(n){ let x = (Math.imul(n, 2654435761) >>> 0) || 1; return () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; }
+let WCACHE = null;
+function world(){
+  if (WCACHE && WCACHE.t > Date.now() - 15000) return WCACHE;
+  const now = Date.now(), A = allActs(), st = {}, raids = [];
+  SITES.forEach(s => st[s.id] = { status: "standing", immuneUntil: 0 });
+  const curWeek = Math.max(0, Math.floor((now - LAUNCH) / WEEK)), J = joins(), awake = J.length >= WAKE_AT;
+  // raids begin the first Monday after the fifth explorer joins
+  const firstWeek = awake ? Math.max(0, Math.ceil((J[WAKE_AT - 1] - LAUNCH) / WEEK)) : Infinity;
+  for (let w = Math.min(firstWeek, curWeek + 1); w <= curWeek; w++) {
+    const ws = LAUNCH + w * WEEK, we = ws + WEEK, r = seeded(w + 1031), per = raidsFor(J.filter(t => t < ws).length);
+    const pool = SITES.filter(s => !s.lost && st[s.id].status === "standing" && st[s.id].immuneUntil <= ws);
+    for (let i = 0; i < per && pool.length; i++) {
+      const s = pool.splice(Math.floor(r() * pool.length), 1)[0];
+      const win = A.filter(a => a.site === s.id && a.at >= ws && a.at < we && a.k !== "restore");
+      const raid = { site: s.id, week: w, start: ws, due: we, pts: win.reduce((t, a) => t + a.pts, 0), defenders: [...new Set(win.map(a => a.uid))], live: now < we };
+      const rogue = ROGUES[Math.floor(r() * ROGUES.length)];
+      if (raid.live) st[s.id].threat = raid;
+      else if (raid.pts >= SAVE_AT) { raid.outcome = "saved"; if (win.some(a => a.k === "designate")) st[s.id].immuneUntil = we + SEASON; }
+      else { raid.outcome = "demolished"; st[s.id] = { status: "demolished", since: we, rogue, raid, immuneUntil: 0 }; }
+      raids.push(raid);
+    }
+    SITES.forEach(s => { const x = st[s.id]; if (x.status !== "demolished") return;
+      const rs = A.filter(a => a.site === s.id && a.k === "restore" && a.at >= x.since && a.at < Math.min(we, now + 1)).sort((a, b) => a.at - b.at);
+      let sum = 0, when = null; for (const a of rs) { sum += a.pts; if (sum >= RESTORE_AT) { when = a.at; break; } }
+      if (when) st[s.id] = { status: "standing", immuneUntil: when + SEASON, restored: { at: when, by: [...new Set(rs.filter(a => a.at <= when).map(a => a.uid))] }, wasRogue: x.rogue };
+      else { x.restorePts = sum; x.restorers = [...new Set(rs.map(a => a.uid))]; } });
+  }
+  WCACHE = { t: now, st, raids, curWeek, players: J.length, awake, firstStart: awake ? LAUNCH + firstWeek * WEEK : null };
+  return WCACHE;
+}
+function worldXP(){
+  if (!myId) return 0; const W = world(); let x = 0;
+  myActs().forEach(a => x -= (a.cost || 0));
+  W.raids.forEach(r => { if (!r.outcome || !r.defenders.includes(myId)) return; x += r.outcome === "saved" ? 100 : 50; });
+  Object.values(W.st).forEach(v => { if (v.restored && v.restored.by.includes(myId)) x += 150; });
+  // excavation bonuses are lost on sites the Syndicate took, unless you stood guard there
+  Object.entries(W.st).forEach(([id, v]) => { if (v.status !== "demolished") return; if (v.raid.defenders.includes(myId)) return; if (uploads[id]) x -= 75; if (firsts[id]) x -= 150; });
+  return x;
+}
+function subscribeActs(){
+  if (!db || actUnsub) return;
+  actUnsub = db.collection("acts").limit(1000).onSnapshot(sn => { acts = {}; sn.docs.forEach(d => { acts[d.id] = (d.data().list || []); }); WCACHE = null; render(); if (!$("#sheet").hidden && cur) { const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; } }, () => {});
+}
+async function logAct(k, site, pts, cost){
+  if (!myId) { toast("Sign in to defend sites."); openAuth("signup"); return false; }
+  const ref = db.doc("acts/" + myId); let list = [];
+  try { const sn = await ref.get(); if (sn.exists && Array.isArray(sn.data().list)) list = sn.data().list.slice(); } catch (e) {}
+  list.push({ k, site, pts, cost: cost || 0, at: Date.now() });
+  try { await ref.set({ list }); acts[myId] = list; WCACHE = null; return true; }
+  catch (e) { if (e?.code === "invalid_argument") canWrite = false; toast("Couldn’t reach the expedition’s server. Try again."); return false; }
+}
+function left(ms){ const d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5); return d > 0 ? `${d}d ${h}h` : `${h}h ${Math.max(1, Math.floor(ms % 36e5 / 6e4))}m`; }
+function siteLabel(s){ return found[s.id] ? s.name : `Site ${s.no} on ${s.street}`; }
+function rogueCard(rg, big){
+  return `<div class="rogue${big ? " big" : ""}" style="--rc:${rg.color}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">${ICONS[rg.icon]}</svg><div><b>${esc(rg.name)}</b><span>${esc(rg.tag)}</span><i aria-label="Noise ${rg.noise} of 5">${"▮".repeat(rg.noise)}${"▯".repeat(5 - rg.noise)} noise</i></div></div>`;
+}
+function drawAlert(){
+  const W = world(), live = W.raids.filter(r => r.live), lost = Object.entries(W.st).filter(([, v]) => v.status === "demolished");
+  const b = $("#alert"); if (!b) return;
+  if (!live.length && !lost.length && !W.raids.length) {
+    const n = W.players, pct = Math.min(100, n / WAKE_AT * 100);
+    b.innerHTML = W.awake
+      ? `<div class="alerthead"><span class="siren"></span><b>The Syndicate stirs</b></div><p class="hint" style="margin-top:6px">Five explorers are in, and the developers have noticed. The first raid hits in <strong style="color:#FF8A5E">${left(W.firstStart - Date.now())}</strong>. Find sites and bank Marthas now: you’ll need them to defend the town.</p>`
+      : `<div class="alerthead"><span class="eye" aria-hidden="true"></span><b class="sleep">The Syndicate is watching</b></div>
+        <p class="hint" style="margin-top:6px">A shadowy band of developers is eyeing bVille’s historic sites. They’ll make their move once <strong>${WAKE_AT} explorers</strong> are in the game. Recruit friends, find sites and stock up on Marthas before they strike.</p>
+        <div class="bar big" style="margin-top:8px"><i style="width:${pct}%;background:linear-gradient(90deg,var(--orchid),var(--ember))"></i></div><div class="hint">${n} of ${WAKE_AT} explorers have joined</div>
+        <p class="hint" style="margin-top:8px">They’ve struck before, for real: the Cinderella Patch House (1994), 648 S. Bates (1996) and 315–325 W. Brown (1990).</p>`;
+    b.classList.toggle("dormant", !W.awake); return;
+  }
+  b.classList.remove("dormant");
+  const due = live.length ? live[0].due : LAUNCH + (W.curWeek + 1) * WEEK;
+  b.innerHTML = `<div class="alerthead"><span class="siren"></span><b>Syndicate raid</b><span class="hint">${live.length} site${live.length === 1 ? "" : "s"} under threat · bulldozers arrive in ${left(due - Date.now())}</span></div>
+    <div class="threats">${live.map(r => { const s = BY[r.site], p = Math.min(100, Math.round(r.pts / SAVE_AT * 100)); return `<button class="threat" data-id="${s.id}" type="button"><span class="tno">${s.no}</span><span class="tnm">${esc(siteLabel(s))}</span><span class="tbar"><i style="width:${p}%"></i></span><span class="tpt">${r.pts >= SAVE_AT ? "Defended" : `${r.pts}/${SAVE_AT} protection`}</span></button>`; }).join("")}</div>
+    <p class="hint" style="margin-top:8px">${lost.length ? `<strong style="color:var(--ember)">${lost.length} site${lost.length === 1 ? "" : "s"} lost to the Syndicate.</strong> Rally a Restore the Record campaign to win ${lost.length === 1 ? "it" : "them"} back. ` : ""}The Syndicate has struck before, for real: the Cinderella Patch House (1994), 648 S. Bates (1996) and 315–325 W. Brown (1990).</p>`;
+  b.querySelectorAll(".threat").forEach(x => x.onclick = () => openSite(x.dataset.id));
+}
+function defendBox(s){
+  const W = world(), v = W.st[s.id];
+  if (v.threat) {
+    const r = v.threat, p = Math.min(100, Math.round(r.pts / SAVE_AT * 100)), mine = myActs().filter(a => a.site === s.id && a.at >= r.start), guarded = mine.some(a => a.k === "guard"), bal = xp();
+    return `<div class="box danger"><h3><span class="siren"></span>Under threat</h3>
+      <p class="story">The Wrecking Ball Syndicate has its eye on this site. Bulldozers arrive in <strong>${left(r.due - Date.now())}</strong> unless explorers raise ${SAVE_AT} protection.</p>
+      <div class="bar big"><i style="width:${p}%"></i></div><div class="hint">${r.pts}/${SAVE_AT} protection from ${r.defenders.length} defender${r.defenders.length === 1 ? "" : "s"}${r.pts >= SAVE_AT ? " · defended, as long as it holds to the deadline" : ""}</div>
+      <h4>On site (free)</h4>
+      <div class="row2"><button class="btn go" id="guard" type="button" ${guarded ? "disabled" : ""}>${guarded ? "You stood guard this raid" : `Stand guard: I’m here (+${ONSITE.guard})`}</button></div>
+      <p class="hint">Posting a Layer 3 photo adds +${ONSITE.photo}; a field report adds +${ONSITE.report}.</p>
+      <h4>Spend Marthas</h4>
+      <div class="defs">${Object.entries(DEFENSES).map(([k, d]) => `<button class="def" data-k="${k}" type="button" ${bal < d.cost ? "disabled" : ""}><b>${esc(d.label)}</b><span>+${d.pts} protection · <span class="coin">M</span> ${d.cost}</span><small>${esc(d.note)}</small></button>`).join("")}</div>
+      <p class="hint">Defenders of a saved site earn 100 Marthas when the raid ends; defenders of a lost site still earn 50 for standing their ground.</p></div>`;
+  }
+  if (v.status === "demolished") {
+    const pts = v.restorePts || 0, p = Math.min(100, Math.round(pts / RESTORE_AT * 100)), bal = xp();
+    return `<div class="box danger"><h3>Demolished by the Syndicate</h3>
+      <p class="story">The bulldozers came on ${new Date(v.since).toLocaleDateString(undefined, { month: "long", day: "numeric" })}. In its place:</p>${rogueCard(v.rogue, true)}
+      <h4 style="margin-top:14px">Restore the Record</h4>
+      <p class="story">Pool Marthas and site visits to condemn ${esc(v.rogue.name)} and bring the historic site back. Restored sites are shielded for a season, and everyone who helped earns 150 Marthas.</p>
+      <div class="bar big restore"><i style="width:${p}%"></i></div><div class="hint">${pts}/${RESTORE_AT} restoration points from ${(v.restorers || []).length} explorer${(v.restorers || []).length === 1 ? "" : "s"}. A Layer 3 photo here adds 50; a field report adds 25.</div>
+      <div class="row2"><button class="btn" data-pledge="50" type="button" ${bal < 50 ? "disabled" : ""}>Pledge <span class="coin">M</span> 50</button><button class="btn" data-pledge="150" type="button" ${bal < 150 ? "disabled" : ""}>Pledge <span class="coin">M</span> 150</button><button class="btn go" data-pledge="400" type="button" ${bal < 400 ? "disabled" : ""}>Pledge <span class="coin">M</span> 400</button></div></div>`;
+  }
+  if (v.restored) return `<div class="box"><h3>Restored by explorers</h3><p class="story">The Syndicate put ${esc(v.wasRogue.name)} here, and explorers condemned it. Shielded from raids until ${new Date(v.immuneUntil).toLocaleDateString(undefined, { month: "long", day: "numeric" })}.</p></div>`;
+  if (v.immuneUntil > Date.now()) return `<div class="box"><h3>Designated</h3><p class="story">Protected from Syndicate raids until ${new Date(v.immuneUntil).toLocaleDateString(undefined, { month: "long", day: "numeric" })}.</p></div>`;
+  return "";
+}
+function wireDefend(s){
+  const g = $("#guard"); if (g) g.onclick = async () => { g.disabled = true; if (await logAct("guard", s.id, ONSITE.guard, 0)) { toast(`You stand guard. +${ONSITE.guard} protection`); repaint(); } else g.disabled = false; };
+  document.querySelectorAll(".def").forEach(b => b.onclick = async () => { const d = DEFENSES[b.dataset.k]; if (xp() < d.cost) return; b.disabled = true; if (await logAct(b.dataset.k, s.id, d.pts, d.cost)) { toast(`${d.label}: +${d.pts} protection (−${d.cost} Marthas)`); repaint(); } else b.disabled = false; });
+  document.querySelectorAll("[data-pledge]").forEach(b => b.onclick = async () => { const n = +b.dataset.pledge; if (xp() < n) return; b.disabled = true; if (await logAct("restore", s.id, n, n)) { toast(`Pledged ${n} Marthas to Restore the Record`); repaint(); } else b.disabled = false; });
+}
+function repaint(){ WCACHE = null; paintTop(); const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; }
+// Called after a Layer 3 photo or a field report: on-site actions count toward defense or restoration.
+async function onSiteAction(kind, site){
+  const v = world().st[site]; if (!v) return;
+  if (v.threat) { if (await logAct(kind, site, ONSITE[kind], 0)) toast(`+${ONSITE[kind]} protection for this site`); }
+  else if (v.status === "demolished") { if (await logAct("restore", site, kind === "photo" ? 50 : 25, 0)) toast(`+${kind === "photo" ? 50 : 25} toward Restore the Record`); }
+  WCACHE = null;
+}
+function syndicateCard(){
+  const W = world(), done = W.raids.filter(r => r.outcome), saved = done.filter(r => r.outcome === "saved").length, lost = done.filter(r => r.outcome === "demolished").length;
+  const restored = Object.values(W.st).filter(v => v.restored).length, mine = myId ? done.filter(r => r.defenders.includes(myId)).length : 0;
+  return `<article class="exp danger"><h3>The Syndicate Ledger</h3><p>${W.awake ? `Every week the Wrecking Ball Syndicate targets ${raidsFor(W.players)} site${raidsFor(W.players) > 1 ? "s" : ""}, and more as the expedition grows.` : `The Syndicate wakes when ${WAKE_AT} explorers have joined (${W.players} so far). Then it targets 1 site a week, 2 at 10 explorers, 3 at 20.`} Defend them on site or with Marthas. Lose one, and something loud moves in.</p>
+    <div class="ledger"><div><b>${saved}</b><span>Saved</span></div><div><b>${lost}</b><span>Lost</span></div><div><b>${restored}</b><span>Restored</span></div><div><b>${mine}</b><span>You defended</span></div></div></article>`;
+}
+
+/* ---------- Layer 3: explorers' photos (shared) ---------- */
+let todayDocs = [], todayUnsub = null, pending = null, pnames = {};
+async function resolveNames(ids){
+  ids = [...new Set(ids.filter(i => i && !(i in pnames)))]; if (!user || !ids.length) return;
+  try { const ps = await user.profiles(ids); ids.forEach(i => pnames[i] = ps?.[i]?.name || ""); if (!$("#sheet").hidden && layer === "today") { const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; } } catch (e) {}
+}
+function unsubToday(){ if (todayUnsub) { todayUnsub(); todayUnsub = null; } todayDocs = []; }
+function subscribeToday(){
+  unsubToday(); if (!db || !cur) return; const id = cur.id;
+  todayUnsub = db.collection("photos").where("stop", "==", id).orderBy("at", "desc").limit(40).onSnapshot(sn => {
+    todayDocs = sn.docs.map(d => d.data()).filter(d => d.asset);
+    resolveNames(todayDocs.map(d => d.author));
+    if (!$("#sheet").hidden && cur && cur.id === id) { const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; }
+  }, () => {});
+}
+function uploadBox(s){
+  if (!myId) return `<div class="box"><h3>Excavate Layer 3</h3><p class="hint">Sign in to add today’s photo of this site and earn Marthas.</p><div class="row2"><button class="btn go" type="button" data-auth="signup">Join the expedition</button><button class="btn" type="button" data-auth="login">Sign in</button></div></div>`;
+  const mine = uploads[s.id];
+  return `<div class="box"><h3>Excavate Layer 3</h3>
+    <p class="hint">Photograph the site as it stands today, from the sidewalk. Please keep people and license plates out of the frame.${mine ? "" : ` Your first post here earns 75 Marthas${todayDocs.length ? "" : ", plus 150 more for being the first explorer to excavate this site"}.`}</p>
+    <div class="row2"><label class="btn" for="ph-in" style="cursor:pointer">${pending ? "Change photo" : (mine ? "Add another photo" : "Take or choose a photo")}</label><input id="ph-in" type="file" accept="image/*" capture="environment" hidden></div>
+    ${pending ? `<img src="${pending.url}" alt="Your photo, ready to post" style="display:block;max-width:100%;max-height:260px;border-radius:10px;margin-top:10px">` : ""}
+    <label class="hint" for="ph-txt" style="display:block;margin-top:10px">Short description</label>
+    <textarea id="ph-txt" maxlength="280" placeholder="What’s here now? e.g. Now a bakery; the cobalt storefront is painted black, but the 1909 cornice survives."></textarea>
+    <div class="row2"><button class="btn go" id="ph-post" type="button" ${pending ? "" : "disabled"}>Post to Layer 3</button><span class="verdict" id="ph-msg" aria-live="polite"></span></div></div>`;
+}
+function wireUpload(s){
+  const inp = $("#ph-in"); if (!inp) return;
+  const txt = $("#ph-txt"); if (txt && pending?.text) txt.value = pending.text;
+  inp.onchange = async () => {
+    const file = inp.files && inp.files[0]; if (!file) return;
+    const msg = $("#ph-msg"); msg.textContent = "Preparing photo…";
+    try { const blob = await shrink(file); if (pending) URL.revokeObjectURL(pending.url); pending = { blob, url: URL.createObjectURL(blob), text: $("#ph-txt").value }; const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; }
+    catch (e) { msg.textContent = "Couldn’t read that photo. Try another one."; }
+  };
+  const post = $("#ph-post"); if (!post) return;
+  post.onclick = async () => {
+    const msg = $("#ph-msg"), text = $("#ph-txt").value.trim();
+    if (!pending) { msg.textContent = "Choose a photo first."; return; }
+    if (text.length < 5) { msg.textContent = "Add a short description first."; return; }
+    post.disabled = true; msg.textContent = "Uploading…";
+    try {
+      const up = await assets.upload(pending.blob, { type: "image/jpeg" });
+      await db.collection("photos").add({ stop: s.id, asset: up.id, text, at: Date.now(), author: myId || null });
+      URL.revokeObjectURL(pending.url); pending = null;
+      const wasEmpty = todayDocs.length === 0, first = !uploads[s.id], before = Object.keys(uploads).length;
+      uploads[s.id] = Date.now(); save("uploads", uploads);
+      let earned = first ? 75 : 0, note = [];
+      if (first && wasEmpty && !firsts[s.id]) { firsts[s.id] = Date.now(); save("firsts", firsts); earned += 150; note.push("first explorer here"); }
+      const after = Object.keys(uploads).length;
+      DIG_MILESTONES.forEach(([n, b, name]) => { if (before < n && after >= n) { earned += b; note.push(name + " badge"); } });
+      layer = "today"; shot = 0; await onSiteAction("photo", s.id); paintTop();
+      toast(earned ? `Layer 3 excavated! +${earned} Marthas${note.length ? " (" + note.join(", ") + ")" : ""}` : "Photo posted");
+    } catch (e) { post.disabled = false;
+      const c = e && e.code;
+      msg.textContent = c === "too_large" ? "That photo is too large. Try a smaller one." : c === "unsupported_type" ? "That file type isn’t supported. Use a JPEG or PNG photo." : c === "quota_exceeded" ? "The expedition’s photo storage is full." : c === "invalid_argument" ? "You don’t have permission to add photos here." : "Couldn’t upload. Check your connection and try again.";
+    }
+  };
+}
+// Resize and re-encode in the browser: smaller uploads, and the camera's location metadata is dropped.
+function shrink(file){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { const k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight)); const cv = document.createElement("canvas"); cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k); cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url); cv.toBlob(b => b ? res(b) : rej(new Error("encode")), "image/jpeg", 0.85); };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error("read")); };
+    im.src = url;
+  });
+}
+
+/* ---------- Martha Board (shared) ---------- */
+let boardRows = [], boardUnsub = null, scoreT = null, lastSent = null;
+function queueScore(m, rank){
+  if (!db || !myId || !canWrite || m <= 0) return;
+  const since = Math.min(Date.now(), ...Object.values(found).map(f => f.at || Date.now()));
+  const body = { m, found: Object.keys(found).length, relics: Object.keys(relics).length, dug: Object.keys(uploads).length, rank, at: Date.now(), since };
+  const sig = [body.m, body.found, body.relics, body.dug].join("/"); if (sig === lastSent) return;
+  clearTimeout(scoreT); scoreT = setTimeout(async () => { try { await db.doc("scores/" + myId).set(body); lastSent = sig; } catch (e) { if (e?.code === "invalid_argument") canWrite = false; } }, 1500);
+}
+function subscribeBoard(){
+  if (!db || boardUnsub) return;
+  boardUnsub = db.collection("scores").orderBy("m", "desc").limit(50).onSnapshot(sn => { boardRows = sn.docs.map(d => ({ id: d.id, ...d.data() })); WCACHE = null; if (tab === "board") drawBoard(); else render(); paintIntroLive(); }, () => {});
+}
+async function drawBoard(){
+  const me = $("#me"), ol = $("#board"), x = xp(), [r] = rankOf(x);
+  me.innerHTML = `<div class="hint">You</div><div class="board-me" style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><b style="font-family:var(--f-label);font-size:20px">${esc(r[1])} · ${Object.keys(found).length} found · ${Object.keys(uploads).length} excavated · ${Object.keys(relics).length} relics</b><span class="m" style="font-family:var(--f-label);font-weight:700;font-size:22px"><span class="coin">M</span> ${x.toLocaleString()}</span></div>` +
+    (!myId ? `<p class="hint" style="margin-top:6px">Sign in to put your score on the board and keep it safe on any phone.</p><div class="row2"><button class="btn go" type="button" data-auth="signup">Join the expedition</button><button class="btn" type="button" data-auth="login">Sign in</button></div>` : !canWrite ? `<p class="hint" style="margin-top:6px">You can watch the board. Ask the expedition’s owner for contributor access to compete.</p>` : "");
+  if (!db) { ol.innerHTML = ""; return; }
+  subscribeBoard();
+  if (!boardRows.length) { ol.innerHTML = `<li><span class="pos">—</span><span class="who"><b>No explorers on the board yet</b><span>Discover a site to post the first score.</span></span><span></span></li>`; return; }
+  let names = {}; try { const ps = await user.profiles(boardRows.map(b => b.id)); boardRows.forEach(b => names[b.id] = ps?.[b.id]?.name || ""); } catch (e) {}
+  ol.innerHTML = boardRows.map((b, i) => `<li class="${b.id === myId ? "you" : ""}"><span class="pos">${i + 1}</span><span class="who"><b>${esc((names[b.id] || "An explorer") + (b.id === myId ? " (you)" : ""))}</b><span>${esc(b.rank || "")} · ${b.found || 0} found · ${b.dug || 0} excavated · ${b.relics || 0} relics</span></span><span class="m"><span class="coin">M</span>${(b.m || 0).toLocaleString()}</span></li>`).join("");
+}
+
+/* ---------- field reports (shared) ---------- */
+let db = null, user = null, myId = null, rdocs = [], unsub = null, canWrite = true;
+let assets = null;
+db = window.bvDB; user = window.bvUser; assets = window.bvAssets;
+subscribeActs(); subscribeBoard();
+function unsubReports(){ if (unsub) { unsub(); unsub = null; } rdocs = []; }
+function subscribeReports(){ unsubReports(); if (!db || !cur) return; unsub = db.collection("reports").where("stop", "==", cur.id).orderBy("at", "desc").limit(50).onSnapshot(sn => { rdocs = sn.docs.map(d => d.data()); paintReports(); }, () => {}); }
+function renderReportUI(){
+  const b = $("#reportUI"); if (!b) return;
+  if (!myId) { b.innerHTML = `<p class="hint">Sign in to add a field report.</p><div class="row2"><button class="btn" type="button" data-auth="login">Sign in</button></div>`; return; }
+  if (!canWrite) { b.innerHTML = `<p class="hint">You can read reports. Ask the expedition’s owner for contributor access to add one.</p>`; return; }
+  b.innerHTML = `<label for="rt" class="hint">Your report</label><textarea id="rt" maxlength="600" placeholder="e.g. The scalloped shingles are still there, but the porch has been rebuilt."></textarea><div class="row2"><button class="btn go" id="rs" type="button">Add report</button><span class="verdict" id="rm" aria-live="polite"></span></div>`;
+  $("#rs").onclick = async () => { const t = $("#rt").value.trim(); if (!t) { $("#rm").textContent = "Write something first."; return; } $("#rs").disabled = true;
+    try { await db.collection("reports").add({ stop: cur.id, text: t, at: Date.now(), author: myId || null }); $("#rt").value = ""; $("#rm").textContent = "Added."; onSiteAction("report", cur.id); }
+    catch (e) { if (e?.code === "invalid_argument") { canWrite = false; renderReportUI(); } else $("#rm").textContent = "Couldn’t save. Check your connection and try again."; }
+    const x = $("#rs"); if (x) x.disabled = false; };
+}
+async function paintReports(){
+  const ul = $("#reports"); if (!ul) return; const docs = rdocs.slice(); let names = {};
+  if (user && docs.length) { try { const ids = [...new Set(docs.map(d => d.author).filter(Boolean))]; const ps = await user.profiles(ids); ids.forEach(i => names[i] = ps?.[i]?.name || ""); } catch (e) {} }
+  ul.innerHTML = ""; docs.forEach(d => { const li = document.createElement("li"); const p = document.createElement("div"); p.textContent = d.text; const m = document.createElement("div"); m.className = "meta"; m.textContent = `${(d.author && names[d.author]) || "An explorer"} · ${new Date(d.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`; li.append(p, m); ul.appendChild(li); });
+}
+
+showTab(tab);
+
+function paintIntroLive(){
+  const el = $("#introlive"); if (!el) return; const W = world(), live = W.raids.filter(r => r.live);
+  el.lastElementChild.textContent = live.length ? `${live.length} site${live.length > 1 ? "s" : ""} under threat · ${left(live[0].due - Date.now())}` : W.awake ? `First raid in ${left(W.firstStart - Date.now())}` : `The Syndicate is watching`;
+}
+/* ---------- Landing ---------- */
+(function intro(){
+  const pics = ["walk/img/hunter-a1","ride/img/quartonhomestead-a1","downtown/img/stitched-result1shain","walk/img/raynale-a1","ride/img/greenwood-a1","ride/img/wooster-a1","downtown/img/hawthorne-building-361-e-maple","walk/img/chatfield-a1"];
+  const box = $(".slides"); box.innerHTML = pics.map(p => `<img src="${IMG(p)}" alt="" decoding="async">`).join("");
+  const ims = [...box.children]; let i = 0; ims[0].classList.add("on");
+  if (!RM) setInterval(() => { if (document.hidden) return; ims[i].classList.remove("on"); i = (i + 1) % ims.length; ims[i].classList.add("on"); }, 4500);
+  const n = Object.keys(found).length, x = xp();
+  if (n) { $("#start").textContent = "Resume the hunt"; $("#introwho").textContent = `${rankOf(x)[0][1]} · ${n} of 78 found · ${x.toLocaleString()} Marthas`; }
+  paintIntroLive();
+  const go = () => $("#app").scrollIntoView({ behavior: RM ? "auto" : "smooth" });
+  $("#start").onclick = go; $(".scroll").onclick = go;
+  const openHow = () => { $("#howsheet").hidden = false; document.body.style.overflow = "hidden"; $("#howx").focus(); };
+  const closeHow = () => { $("#howsheet").hidden = true; document.body.style.overflow = ""; };
+  $("#how").onclick = openHow; $("#howx").onclick = closeHow; $("#howsheet").onclick = e => { if (e.target.id === "howsheet") closeHow(); };
+})();
+
+/* ---------- Accounts (Netlify Identity) and saved progress ---------- */
+let authMode = "signup", progT = null, progReady = false;
+function setAuthMode(m){
+  authMode = m; const up = m === "signup";
+  document.querySelectorAll(".autabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.m === m));
+  $("#au-h").textContent = up ? "Join the expedition" : "Welcome back, explorer";
+  $("#au-sub").textContent = up ? "Save your finds and Marthas on any phone, post photos and compete on the Martha Board." : "Sign in to pick up where you left off.";
+  $("#au-namef").hidden = !up; $("#au-go").textContent = up ? "Join the expedition" : "Sign in"; $("#au-forgot").hidden = up;
+  $("#au-pw").autocomplete = up ? "new-password" : "current-password"; $("#au-msg").textContent = "";
+}
+function openAuth(m){
+  $("#auin").hidden = !!myId; $("#auout").hidden = !myId; $("#aureset").hidden = true;
+  if (!myId) setAuthMode(m || "signup"); else { $("#au-who").textContent = window.bvMe?.email || window.bvMe?.name || ""; $("#au-rename").value = window.bvMe?.name || ""; $("#au-msg2").textContent = ""; }
+  $("#authsheet").hidden = false; document.body.style.overflow = "hidden";
+  setTimeout(() => (myId ? $("#au-rename") : (authMode === "signup" ? $("#au-name") : $("#au-email"))).focus(), 50);
+}
+function closeAuth(){ $("#authsheet").hidden = true; document.body.style.overflow = $("#sheet").hidden ? "" : "hidden"; }
+function authErr(e){
+  const m = String(e?.message || e || "").toLowerCase(), st = e?.status;
+  if (m.includes("already") || m.includes("registered")) return "That email already has an account. Choose “I have an account” to sign in.";
+  if (m.includes("invalid") && (m.includes("password") || m.includes("grant") || m.includes("credentials")) || st === 400) return "That email and password don’t match. Try again, or reset your password.";
+  if (m.includes("confirm")) return "Check your inbox and click the confirmation link first.";
+  if (m.includes("password") && m.includes("6")) return "Use a password with at least 8 characters.";
+  if (st === 404 || m.includes("identity")) return "Sign-in isn’t switched on for this site yet.";
+  return "Something went wrong. Check your connection and try again.";
+}
+document.addEventListener("click", e => { const t = e.target.closest?.("[data-auth]"); if (t) { e.preventDefault(); openAuth(t.dataset.auth); } });
+function paintAcct(){ const b = $("#acct"); if (!b) return; b.textContent = myId ? (window.bvMe?.name || "Explorer") : "Sign in"; b.classList.toggle("in", !!myId); const s = $("#introsign"); if (s) s.hidden = !!myId; }
+async function signedIn(u){
+  let me = null; try { me = (await bvDB.api("me")).user; } catch (e) {}
+  if (!me) { myId = null; paintAcct(); return; }
+  window.bvMe = { ...me, email: u?.email || "" }; myId = me.id; paintAcct();
+  await pullProgress(); progReady = true; queueProgress(true);
+  lastSent = null; paintTop(); render(); bvDB.refresh();
+  if (!$("#sheet").hidden && cur) { renderReportUI(); const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; }
+  if (tab === "board") drawBoard();
+}
+// Merge what's on this phone with what's saved on the server: nothing a player earned is ever dropped.
+function mergeObj(a = {}, b = {}, k){
+  const out = { ...a };
+  for (const [id, v] of Object.entries(b)) {
+    if (!(id in out)) { out[id] = v; continue; }
+    const x = out[id];
+    if (k === "hints") out[id] = Math.max(+x || 0, +v || 0);
+    else if (k === "answers") out[id] = x && x.ok ? x : v;
+    else if (typeof x === "object" && x && typeof v === "object" && v) out[id] = (v.at || Infinity) < (x.at || Infinity) ? v : x;
+    else out[id] = Math.min(+x || Infinity, +v || Infinity) || x;
+  }
+  return out;
+}
+async function pullProgress(){
+  try {
+    const r = await bvDB.api("me/progress"), sv = r?.data || {};
+    found = mergeObj(found, sv.found, "found"); answers = mergeObj(answers, sv.answers, "answers"); hints = mergeObj(hints, sv.hints, "hints");
+    relics = mergeObj(relics, sv.relics, "relics"); uploads = mergeObj(uploads, sv.uploads, "uploads"); firsts = mergeObj(firsts, sv.firsts, "firsts");
+    const cur = { found, answers, hints, relics, uploads, firsts }; PROG_KEYS.forEach(k => { try { localStorage.setItem(KEY + k, JSON.stringify(cur[k])); } catch (e) {} });
+  } catch (e) {}
+}
+function queueProgress(now){
+  if (!myId || !progReady) return; clearTimeout(progT);
+  progT = setTimeout(async () => { try { await bvDB.api("me/progress", { method: "PUT", json: { found, answers, hints, relics, uploads, firsts } }); } catch (e) {} }, now ? 0 : 2000);
+}
+addEventListener("pagehide", () => { if (myId && progReady && progT) { clearTimeout(progT); try { const m = /(?:^|; )nf_jwt=([^;]*)/.exec(document.cookie); fetch("/api/me/progress", { method: "PUT", keepalive: true, headers: { "content-type": "application/json", ...(m ? { Authorization: "Bearer " + decodeURIComponent(m[1]) } : {}) }, body: JSON.stringify({ found, answers, hints, relics, uploads, firsts }) }); } catch (e) {} } });
+(async function bootAuth(){
+  $("#acct").onclick = () => openAuth("login"); $("#aux").onclick = closeAuth;
+  $("#authsheet").onclick = e => { if (e.target.id === "authsheet") closeAuth(); };
+  document.querySelectorAll(".autabs button").forEach(b => b.onclick = () => setAuthMode(b.dataset.m));
+  paintAcct();
+  if (!window.NI) return;
+  try { const st = await NI.getSettings(); if (st?.providers?.google) { const g = $("#au-google"); g.hidden = false; g.onclick = () => NI.oauthLogin("google"); } } catch (e) {}
+  $("#au-form").onsubmit = async e => {
+    e.preventDefault(); const em = $("#au-email").value.trim(), pw = $("#au-pw").value, nm = $("#au-name").value.trim(), msg = $("#au-msg"); msg.className = "verdict";
+    if (!/^\S+@\S+\.\S+$/.test(em)) { msg.textContent = "Enter your email address."; return; }
+    if (pw.length < 8) { msg.textContent = "Use a password with at least 8 characters."; return; }
+    if (authMode === "signup" && nm.length < 2) { msg.textContent = "Pick an explorer name."; return; }
+    $("#au-go").disabled = true; msg.textContent = authMode === "signup" ? "Creating your account…" : "Signing in…";
+    try {
+      if (authMode === "signup") {
+        const u = await NI.signup(em, pw, { full_name: nm });
+        let cur = null; try { cur = await NI.getUser(); } catch (x) {}
+        if (!cur) { try { cur = await NI.login(em, pw); } catch (x) {} }
+        if (cur) { closeAuth(); await signedIn(cur); celebrate("Welcome, " + nm + "!", "Your expedition is saved"); }
+        else { msg.className = "verdict ok"; msg.textContent = "Almost there! We sent a confirmation link to " + em + ". Open it on this phone to finish."; }
+      } else { const u = await NI.login(em, pw); closeAuth(); await signedIn(u); toast("Welcome back, " + (window.bvMe?.name || "explorer") + "!"); }
+    } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); }
+    $("#au-go").disabled = false;
+  };
+  $("#au-forgot").onclick = async () => { const em = $("#au-email").value.trim(), msg = $("#au-msg"); if (!/^\S+@\S+\.\S+$/.test(em)) { msg.textContent = "Type your email above first."; return; } try { await NI.requestPasswordRecovery(em); msg.className = "verdict ok"; msg.textContent = "Check your email for a link to reset your password."; } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } };
+  $("#au-out").onclick = async () => { clearTimeout(progT); if (progReady) { try { await bvDB.api("me/progress", { method: "PUT", json: { found, answers, hints, relics, uploads, firsts } }); } catch (e) {} } try { await NI.logout(); } catch (e) {} PROG_KEYS.forEach(k => { try { localStorage.removeItem(KEY + k); } catch (e) {} }); location.reload(); };
+  $("#au-savename").onclick = async () => { const nm = $("#au-rename").value.trim(), msg = $("#au-msg2"); if (nm.length < 2) { msg.textContent = "Pick a name with at least 2 letters."; return; } try { await NI.updateUser({ data: { full_name: nm } }); await NI.refreshSession?.(); const me = (await bvDB.api("me")).user; if (me) window.bvMe = { ...window.bvMe, ...me }; paintAcct(); msg.className = "verdict ok"; msg.textContent = "Saved. The board updates within a minute."; } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } };
+  $("#au-setpw").onclick = async () => { const pw = $("#au-newpw").value, msg = $("#au-msg3"); if (pw.length < 8) { msg.textContent = "Use at least 8 characters."; return; } try { await NI.updateUser({ password: pw }); msg.className = "verdict ok"; msg.textContent = "Password saved."; setTimeout(closeAuth, 900); } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } };
+  let cb = null; try { cb = await NI.handleAuthCallback(); } catch (e) { toast("That link has expired. Try again."); }
+  let u = cb?.user || null; if (!u) { try { u = await NI.getUser(); } catch (e) {} }
+  if (u) await signedIn(u);
+  if (cb?.type === "confirmation") celebrate("Welcome aboard!", "Your expedition is saved");
+  if (cb?.type === "oauth" && u) toast("Signed in as " + (window.bvMe?.name || "explorer"));
+  if (cb?.type === "recovery") { $("#auin").hidden = true; $("#auout").hidden = true; $("#aureset").hidden = false; $("#authsheet").hidden = false; }
+})();
+</script>
+
+</body>
+</html>

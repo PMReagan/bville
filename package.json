@@ -1,0 +1,21 @@
+{
+  "name": "bville",
+  "version": "1.0.0",
+  "description": "bVille Expedition: a game of Birmingham, Michigan historic sites",
+  "scripts": {
+    "build:identity": "esbuild src/auth-entry.js --bundle --minify --format=iife --platform=browser --target=es2020,safari15 --outfile=public/identity.js",
+    "build:page": "python3 src/build.py"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.4",
+    "@netlify/functions": "^6.0.2",
+    "@netlify/identity": "^2.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  },
+  "private": true
+}
