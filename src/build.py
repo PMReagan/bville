@@ -21,13 +21,13 @@ R('const save = (k, v) => { try { localStorage.setItem(KEY + k, JSON.stringify(v
 
 # --- write gates: need a signed-in explorer
 R('  if (!db || !myId || !canWrite) { toast("Sign in with contributor access to defend sites."); return false; }',
-  '  if (!myId) { toast("Sign in to defend sites."); openAuth("signup"); return false; }')
+  '  if (!myId) { toast("Join the expedition to defend sites."); openAuth(); return false; }')
 R('  if (!db) return `<div class="box"><h3>Excavate Layer 3</h3><p class="hint">Sign in to claude.ai to add today’s photo of this site.</p></div>`;\n  if (!assets || !canWrite) return `<div class="box"><h3>Excavate Layer 3</h3><p class="hint">Ask the expedition’s owner for contributor access to add photos.</p></div>`;',
-  '  if (!myId) return `<div class="box"><h3>Excavate Layer 3</h3><p class="hint">Sign in to add today’s photo of this site and earn Marthas.</p><div class="row2"><button class="btn go" type="button" data-auth>Sign in or join</button></div></div>`;')
+  '  if (!myId) return `<div class="box"><h3>Excavate Layer 3</h3><p class="hint">Join the expedition to post today’s photo and earn Marthas. No password needed.</p><div class="row2"><button class="btn go" type="button" data-auth>Join the expedition</button></div></div>`;')
 R('    (!db ? `<p class="hint" style="margin-top:6px">Sign in to claude.ai to post your score and see other explorers.</p>` : !canWrite ?',
-  '    (!myId ? `<p class="hint" style="margin-top:6px">Sign in to put your score on the board and keep it safe on any phone.</p><div class="row2"><button class="btn go" type="button" data-auth>Sign in or join</button></div>` : !canWrite ?')
+  '    (!myId ? `<p class="hint" style="margin-top:6px">Join to put your score on the board. No password needed.</p><div class="row2"><button class="btn go" type="button" data-auth>Join the expedition</button></div>` : !canWrite ?')
 R('  if (!db) { b.innerHTML = `<p class="hint">Sign in to claude.ai to read and add field reports.</p>`; return; }',
-  '  if (!myId) { b.innerHTML = `<p class="hint">Sign in to add a field report.</p><div class="row2"><button class="btn" type="button" data-auth>Sign in or join</button></div>`; return; }')
+  '  if (!myId) { b.innerHTML = `<p class="hint">Join the expedition to add a field report.</p><div class="row2"><button class="btn" type="button" data-auth>Join the expedition</button></div>`; return; }')
 
 # --- startup: server adapter + Netlify Identity
 old = re.search(r'\(async \(\) => \{ try \{ if \(!window\.claude\?\.use\) return;.*?\}\)\(\);\n', s).group(0)
@@ -44,9 +44,9 @@ s += '\n</body>\n</html>\n'
 
 # --- header: account chip
 R('<button class="howbtn" id="how" type="button" aria-label="How to play">How to play</button>',
-  '<span class="hbtns"><button class="howbtn icon" id="snd" type="button" aria-pressed="true" aria-label="Sound on"></button><button class="howbtn" id="acct" type="button">Sign in</button><button class="howbtn" id="how" type="button" aria-label="How to play">How?</button></span>')
+  '<span class="hbtns"><button class="howbtn icon" id="snd" type="button" aria-pressed="true" aria-label="Sound on"></button><button class="howbtn" id="acct" type="button">Join</button><button class="howbtn" id="how" type="button" aria-label="How to play">How?</button></span>')
 R('<button class="cta" id="start" type="button">Start the hunt</button>',
-  '<button class="cta" id="start" type="button">Start the hunt</button>\n    <button class="introlink" id="introsign" type="button" data-auth>Already exploring? Sign in</button>')
+  '<button class="cta" id="start" type="button">Start the hunt</button>\n    <button class="introlink" id="introsign" type="button" data-auth="code">Played before? Enter your explorer code</button>')
 
 css = open('/home/claude/bville/src/account.css').read()
 R('/* ===== Landing ===== */', css + '\n/* ===== Landing ===== */')

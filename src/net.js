@@ -5,6 +5,7 @@
   const jwt = () => { const m = /(?:^|; )nf_jwt=([^;]*)/.exec(document.cookie); return m ? decodeURIComponent(m[1]) : ""; };
   async function api(path, opt = {}){
     const h = { ...(opt.headers || {}) }; const t = jwt(); if (t) h.Authorization = "Bearer " + t;
+    try { const pl = JSON.parse(localStorage.getItem("bville-player") || "null"); if (pl) h["x-player"] = pl.id + "." + pl.token; } catch (e) {}
     if (opt.json !== undefined) { h["content-type"] = "application/json"; opt.body = JSON.stringify(opt.json); }
     let r = await fetch("/api/" + path, { method: opt.method || "GET", headers: h, body: opt.body, credentials: "same-origin" });
     if (r.status === 401 && t && window.NI) { try { await NI.refreshSession(); } catch (e) {} const t2 = jwt(); if (t2 && t2 !== t) { h.Authorization = "Bearer " + t2; r = await fetch("/api/" + path, { method: opt.method || "GET", headers: h, body: opt.body }); } }

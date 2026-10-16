@@ -12,13 +12,44 @@ const json = (b, s = 200, h = {}) => Response.json(b, { status: s, headers: { "c
 const bad = (msg, s = 400) => json({ error: msg }, s);
 const ADMIN = (process.env.BVILLE_ADMINS || "").toLowerCase().split(",").map(s => s.trim()).filter(Boolean);
 
+// ---- Explorer accounts: no passwords. A player holds a secret token on their phone;
+// an explorer code moves them to another phone; Google sign-in can be linked as a backup.
+const enc = new TextEncoder();
+async function sha(t){ const d = await crypto.subtle.digest("SHA-256", enc.encode(t)); return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, "0")).join(""); }
+const rand = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return a; };
+const CODE_ABC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const newCode = () => { const a = rand(8); let c = ""; for (let i = 0; i < 8; i++) c += CODE_ABC[a[i] % CODE_ABC.length]; return "BVILLE-" + c.slice(0, 4) + "-" + c.slice(4); };
+const newToken = () => [...rand(24)].map(b => b.toString(16).padStart(2, "0")).join("");
+const cleanName = n => String(n || "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 30);
+async function setProfile(id, name){ const p = store("profiles"); const cur = await p.get(id, { type: "json" }); if (!cur || cur.name !== name) await p.setJSON(id, { name }); }
+async function issue(id, player){
+  const token = newToken(); player.tokens = [await sha(token), ...(player.tokens || [])].slice(0, 6);
+  await store("players").setJSON(id, player); return { id, token, code: player.code, name: player.name };
+}
+async function makePlayer(id, name){
+  const codes = store("codes"); let code = newCode();
+  for (let i = 0; i < 5; i++) { const r = await codes.set(code, id, { onlyIfNew: true }); if (r.modified !== false) break; code = newCode(); }
+  const player = { name, code, created: Date.now(), tokens: [] }; await setProfile(id, name);
+  return issue(id, player);
+}
+async function playerFromHeader(req){
+  const h = req.headers.get("x-player") || ""; const [id, token] = h.split(".");
+  if (!id || !token || !/^p_[a-z0-9]+$|^[0-9a-f-]{20,}$/.test(id)) return null;
+  const pl = await store("players").get(id, { type: "json" }); if (!pl) return null;
+  if (!(pl.tokens || []).includes(await sha(token))) return null;
+  return { id, pl };
+}
+async function identityUser(){ try { return await getUser(); } catch (e) { return null; } }
+let REQ = null;
 async function me(){
-  try { const u = await getUser(); if (!u) return null;
-    const name = (u.name || (u.email || "").split("@")[0] || "Explorer").slice(0, 40);
-    // keep a public display name for the board (never the email address)
-    const p = store("profiles"); const cur = await p.get(u.id, { type: "json" });
-    if (!cur || cur.name !== name) await p.setJSON(u.id, { name });
-    return { id: u.id, name, admin: !!u.email && ADMIN.includes(u.email.toLowerCase()) };
+  try {
+    const p = await playerFromHeader(REQ);
+    if (p) return { id: p.id, name: p.pl.name, code: p.pl.code, admin: !!p.pl.admin, google: !!p.pl.google };
+    // older email/Google sessions with no player token yet
+    const u = await identityUser(); if (!u) return null;
+    const link = await store("links").get(u.id, { type: "json" }); const id = link?.player || u.id;
+    const pl = await store("players").get(id, { type: "json" });
+    return { id, name: pl?.name || cleanName(u.name) || "Explorer", code: pl?.code || null, admin: !!u.email && ADMIN.includes(u.email.toLowerCase()), google: true };
   } catch (e) { return null; }
 }
 async function body(req, max = MAX_JSON){
@@ -34,8 +65,42 @@ const clean = (v, n) => String(v ?? "").slice(0, n);
 
 export default async (req, context) => {
   const url = new URL(req.url), parts = url.pathname.replace(/^\/api\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
-  const [a, b, c, d] = parts, M = req.method;
+  const [a, b, c, d] = parts, M = req.method; REQ = req;
   try {
+    // --- accounts
+    if (a === "join" && M === "POST") {
+      const v = await body(req), name = cleanName(v.name) || "Explorer " + (1000 + Math.floor(Math.random() * 9000));
+      const id = "p_" + [...rand(9)].map(b => b.toString(36).padStart(2, "0")).join("").slice(0, 14);
+      return json(await makePlayer(id, name));
+    }
+    if (a === "restore" && M === "POST") {
+      const v = await body(req), code = String(v.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^BVILLE/, "");
+      if (code.length !== 8) return bad("bad_code");
+      const id = await store("codes").get("BVILLE-" + code.slice(0, 4) + "-" + code.slice(4)); if (!id) return bad("bad_code", 404);
+      const pl = await store("players").get(id, { type: "json" }); if (!pl) return bad("bad_code", 404);
+      return json(await issue(id, pl));
+    }
+    if (a === "me" && b === "name" && M === "PUT") {
+      const p = await playerFromHeader(req); if (!p) return bad("sign_in", 401);
+      const name = cleanName((await body(req)).name); if (name.length < 2) return bad("bad_name");
+      p.pl.name = name; await store("players").setJSON(p.id, p.pl); await setProfile(p.id, name); return json({ ok: true, name });
+    }
+    // link the Google account that is signed in to this player (backup)
+    if (a === "me" && b === "link" && M === "POST") {
+      const p = await playerFromHeader(req), u = await identityUser(); if (!p || !u) return bad("sign_in", 401);
+      await store("links").setJSON(u.id, { player: p.id, at: Date.now() }); p.pl.google = true; if (u.email && ADMIN.includes(u.email.toLowerCase())) p.pl.admin = true;
+      await store("players").setJSON(p.id, p.pl); return json({ ok: true });
+    }
+    // signed in with Google on a new phone: hand back that player (or create one)
+    if (a === "google" && M === "POST") {
+      const u = await identityUser(); if (!u) return bad("sign_in", 401);
+      const link = await store("links").get(u.id, { type: "json" });
+      if (link?.player) { const pl = await store("players").get(link.player, { type: "json" }); if (pl) return json(await issue(link.player, pl)); }
+      const id = u.id, old = await store("players").get(id, { type: "json" });
+      const out = old ? await issue(id, old) : await makePlayer(id, cleanName(u.name) || (await store("profiles").get(id, { type: "json" }))?.name || "Explorer");
+      const pl = await store("players").get(id, { type: "json" }); pl.google = true; if (u.email && ADMIN.includes(u.email.toLowerCase())) pl.admin = true; await store("players").setJSON(id, pl);
+      await store("links").setJSON(u.id, { player: id, at: Date.now() }); return json(out);
+    }
     // --- who am I
     if (a === "me" && !b && M === "GET") { const u = await me(); return json({ user: u }); }
     // --- private progress: one doc per explorer

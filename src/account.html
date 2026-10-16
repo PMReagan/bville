@@ -1,35 +1,26 @@
 <div class="sheet" id="authsheet" hidden><div class="card authcard" role="dialog" aria-modal="true" aria-labelledby="au-h">
   <button class="btn" id="aux" type="button" style="float:right">Close</button>
-  <div id="auin">
-    <h2 id="au-h">Save your expedition</h2>
-    <p class="hint" style="margin-bottom:18px">Keep your Marthas on any phone and join the Martha Board.</p>
-    <form id="au-form" novalidate>
-      <label class="fld"><span>Email</span><input id="au-email" type="email" autocomplete="email" inputmode="email" required></label>
-      <label class="fld"><span>Password</span><input id="au-pw" type="password" autocomplete="current-password" minlength="8" required></label>
-      <button class="btn go big" id="au-go" type="submit">Continue</button>
-      <p class="verdict" id="au-msg" aria-live="polite"></p>
-      <button class="introlink" id="au-forgot" type="button" hidden>Forgot your password?</button>
-    </form>
-    <button class="btn google" id="au-google" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.1 14.6 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.6-4.1 9.6-9.8 0-.7-.1-1.2-.2-1.7H12z"/></svg>Continue with Google</button>
+  <div id="aujoin">
+    <h2 id="au-h">Join the expedition</h2>
+    <p class="hint" style="margin-bottom:16px">No password needed. Just pick a name for the Martha Board.</p>
+    <label class="fld"><span>Explorer name</span><input id="au-name" autocomplete="nickname" maxlength="30" placeholder="e.g. Paul R."></label>
+    <button class="btn go big" id="au-join" type="button">Let’s go</button>
+    <p class="verdict" id="au-msg" aria-live="polite"></p>
+    <div class="altways"><button class="introlink" type="button" data-pane="aucode">Played before? Enter your explorer code</button><button class="btn google" type="button" data-google hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.1 14.6 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.6-4.1 9.6-9.8 0-.7-.1-1.2-.2-1.7H12z"/></svg>Continue with Google</button></div>
   </div>
-  <div id="auname" hidden>
-    <h2>One last thing</h2>
-    <p class="hint">What should we call you on the Martha Board? Your email is never shown.</p>
-    <label class="fld"><span>Explorer name</span><input id="au-nm" autocomplete="nickname" maxlength="40" placeholder="e.g. Paul R."></label>
-    <button class="btn go big" id="au-nmgo" type="button">Start exploring</button>
-    <p class="verdict" id="au-msg4" aria-live="polite"></p>
-  </div>
-  <div id="auout" hidden>
-    <h2>Your expedition</h2>
-    <p class="story">Signed in as <strong id="au-who"></strong>. Your progress is saved to bVille’s server, so it follows you to any phone or computer.</p>
-    <label class="fld"><span>Explorer name</span><input id="au-rename" maxlength="40"></label>
-    <div class="row2"><button class="btn" id="au-savename" type="button">Save name</button><button class="btn" id="au-out" type="button">Sign out</button></div>
+  <div id="aucode" hidden>
+    <h2>Welcome back</h2>
+    <p class="hint" style="margin-bottom:16px">Enter the explorer code from your other phone. You’ll find it under your name in the game.</p>
+    <label class="fld"><span>Explorer code</span><input id="au-code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="BVILLE-XXXX-XXXX" maxlength="20"></label>
+    <button class="btn go big" id="au-restore" type="button">Continue</button>
     <p class="verdict" id="au-msg2" aria-live="polite"></p>
+    <div class="altways"><button class="btn google" type="button" data-google hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.1 14.6 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.6-4.1 9.6-9.8 0-.7-.1-1.2-.2-1.7H12z"/></svg>I backed up with Google</button><button class="introlink" type="button" data-pane="aujoin">I’m new here</button></div>
   </div>
-  <div id="aureset" hidden>
-    <h2>Choose a new password</h2>
-    <label class="fld"><span>New password</span><input id="au-newpw" type="password" autocomplete="new-password" minlength="8"></label>
-    <div class="row2"><button class="btn go" id="au-setpw" type="button">Save password</button></div>
-    <p class="verdict" id="au-msg3" aria-live="polite"></p>
+  <div id="auprof" hidden>
+    <h2>Your expedition</h2>
+    <label class="fld"><span>Explorer name</span><input id="au-rename" maxlength="30"></label>
+    <div class="row2"><button class="btn" id="au-savename" type="button">Save name</button><span class="verdict" id="au-msg3" aria-live="polite"></span></div>
+    <div class="codebox"><div class="hint">Your explorer code</div><b id="au-mycode"></b><p class="hint">Use it to play on another phone. Screenshot it or write it down.</p><button class="btn" id="au-copy" type="button">Copy code</button></div>
+    <div id="au-backup"></div>
   </div>
 </div></div>

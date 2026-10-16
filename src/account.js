@@ -1,39 +1,38 @@
 
-/* ---------- Accounts (Netlify Identity) and saved progress ---------- */
-let progT = null, progReady = false;
-function showPane(id){ ["auin", "auout", "aureset", "auname"].forEach(p => $("#" + p).hidden = p !== id); }
-function openAuth(){
-  if (myId) { showPane("auout"); $("#au-who").textContent = window.bvMe?.email || window.bvMe?.name || ""; $("#au-rename").value = window.bvMe?.name || ""; $("#au-msg2").textContent = ""; }
-  else { showPane("auin"); $("#au-msg").textContent = ""; $("#au-forgot").hidden = true; }
+/* ---------- Explorer accounts: no passwords ----------
+   The phone keeps a secret token for its player. An explorer code moves a player to another phone,
+   and Google sign-in can be linked as a backup. Progress lives on the server. */
+let progT = null, progReady = false, googleOn = false;
+const PKEY = "bville-player";
+function getPlayer(){ try { return JSON.parse(localStorage.getItem(PKEY) || "null"); } catch (e) { return null; } }
+function setPlayer(p){ try { localStorage.setItem(PKEY, JSON.stringify(p)); } catch (e) {} }
+function showPane(id){ ["aujoin", "aucode", "auprof"].forEach(p => $("#" + p).hidden = p !== id); }
+function openAuth(pane){
+  if (myId) { showPane("auprof"); paintProfile(); } else showPane(pane === "code" ? "aucode" : "aujoin");
+  ["#au-msg", "#au-msg2", "#au-msg3"].forEach(m => { const e = $(m); if (e) { e.textContent = ""; e.className = "verdict"; } });
   $("#authsheet").hidden = false; document.body.style.overflow = "hidden";
-  setTimeout(() => (myId ? $("#au-rename") : $("#au-email")).focus(), 50);
+  setTimeout(() => (myId ? null : pane === "code" ? $("#au-code") : $("#au-name"))?.focus(), 60);
 }
 function closeAuth(){ $("#authsheet").hidden = true; document.body.style.overflow = $("#sheet").hidden ? "" : "hidden"; }
-function authErr(e){
-  const m = String(e?.message || e || "").toLowerCase(), st = e?.status;
-  if (m.includes("already") || m.includes("registered")) return "That email already has an account. Choose “I have an account” to sign in.";
-  if (m.includes("invalid") && (m.includes("password") || m.includes("grant") || m.includes("credentials")) || st === 400) return "That email and password don’t match. Try again, or reset your password.";
-  if (m.includes("confirm")) return "Check your inbox and click the confirmation link first.";
-  if (m.includes("password") && m.includes("6")) return "Use a password with at least 8 characters.";
-  if (st === 404 || m.includes("identity")) return "Sign-in isn’t switched on for this site yet.";
-  return "Something went wrong. Check your connection and try again.";
+function paintProfile(){
+  $("#au-rename").value = window.bvMe?.name || ""; $("#au-mycode").textContent = window.bvMe?.code || "";
+  $("#au-backup").innerHTML = window.bvMe?.google ? `<p class="cracked">Backed up with Google. Sign in with Google on any phone to pick up where you left off.</p>`
+    : googleOn ? `<div class="codebox"><div class="hint">Extra safety</div><p class="hint">Link your Google account so you can get back in even without your code.</p><button class="btn google" type="button" id="au-link"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.1 14.6 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.6-4.1 9.6-9.8 0-.7-.1-1.2-.2-1.7H12z"/></svg>Back up with Google</button></div>` : "";
+  const l = $("#au-link"); if (l) l.onclick = () => { try { sessionStorage.setItem("bv-google", "link"); } catch (e) {} NI.oauthLogin("google"); };
 }
-document.addEventListener("click", e => { const t = e.target.closest?.("[data-auth]"); if (t) { e.preventDefault(); openAuth(); } });
-function paintAcct(){ const b = $("#acct"); if (!b) return; b.textContent = myId ? (window.bvMe?.name || "Explorer") : "Sign in"; b.classList.toggle("in", !!myId); const s = $("#introsign"); if (s) s.hidden = !!myId; }
-async function afterLogin(u, isNew){
-  await signedIn(u);
-  if (!u?.name) { showPane("auname"); $("#authsheet").hidden = false; setTimeout(() => $("#au-nm").focus(), 50); }
-  else { closeAuth(); toast("Welcome back, " + (window.bvMe?.name || "explorer") + "!"); }
-}
-async function signedIn(u){
+document.addEventListener("click", e => { const t = e.target.closest?.("[data-auth]"); if (t) { e.preventDefault(); openAuth(t.dataset.auth); } });
+function paintAcct(){ const b = $("#acct"); if (!b) return; b.textContent = myId ? (window.bvMe?.name || "Explorer") : "Join"; b.classList.toggle("in", !!myId); const s = $("#introsign"); if (s) s.hidden = !!myId; }
+async function signedIn(){
   let me = null; try { me = (await bvDB.api("me")).user; } catch (e) {}
-  if (!me) { myId = null; paintAcct(); return; }
-  window.bvMe = { ...me, email: u?.email || "" }; myId = me.id; paintAcct();
+  if (!me) { myId = null; paintAcct(); return false; }
+  window.bvMe = me; myId = me.id; paintAcct();
   await pullProgress(); progReady = true; queueProgress(true);
   lastSent = null; paintTop(); render(); bvDB.refresh();
   if (!$("#sheet").hidden && cur) { renderReportUI(); const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; }
   if (tab === "board") drawBoard();
+  return true;
 }
+async function joinAs(name){ const p = await bvDB.api("join", { method: "POST", json: { name } }); setPlayer(p); return signedIn(); }
 // Merge what's on this phone with what's saved on the server: nothing a player earned is ever dropped.
 function mergeObj(a = {}, b = {}, k){
   const out = { ...a };
@@ -59,46 +58,36 @@ function queueProgress(now){
   if (!myId || !progReady) return; clearTimeout(progT);
   progT = setTimeout(async () => { try { await bvDB.api("me/progress", { method: "PUT", json: { found, answers, hints, relics, uploads, firsts } }); } catch (e) {} }, now ? 0 : 2000);
 }
-addEventListener("pagehide", () => { if (myId && progReady && progT) { clearTimeout(progT); try { const m = /(?:^|; )nf_jwt=([^;]*)/.exec(document.cookie); fetch("/api/me/progress", { method: "PUT", keepalive: true, headers: { "content-type": "application/json", ...(m ? { Authorization: "Bearer " + decodeURIComponent(m[1]) } : {}) }, body: JSON.stringify({ found, answers, hints, relics, uploads, firsts }) }); } catch (e) {} } });
+addEventListener("pagehide", () => { if (myId && progReady && progT) { clearTimeout(progT); const p = getPlayer(); try { fetch("/api/me/progress", { method: "PUT", keepalive: true, headers: { "content-type": "application/json", ...(p ? { "x-player": p.id + "." + p.token } : {}) }, body: JSON.stringify({ found, answers, hints, relics, uploads, firsts }) }); } catch (e) {} } });
 (async function bootAuth(){
   $("#acct").onclick = () => openAuth(); $("#aux").onclick = closeAuth;
   $("#authsheet").onclick = e => { if (e.target.id === "authsheet") closeAuth(); };
+  document.querySelectorAll("[data-pane]").forEach(b => b.onclick = () => { showPane(b.dataset.pane); setTimeout(() => (b.dataset.pane === "aucode" ? $("#au-code") : $("#au-name")).focus(), 50); });
+  $("#au-join").onclick = async () => { const msg = $("#au-msg"), b = $("#au-join"); b.disabled = true; msg.textContent = "Setting up your expedition…";
+    try { await joinAs($("#au-name").value.trim()); closeAuth(); celebrate("Welcome, " + (window.bvMe?.name || "explorer") + "!", "Your expedition is saved"); } catch (e) { msg.className = "verdict err"; msg.textContent = "Couldn’t reach the server. Try again."; } b.disabled = false; };
+  $("#au-name").onkeydown = e => { if (e.key === "Enter") $("#au-join").click(); };
+  $("#au-restore").onclick = async () => { const msg = $("#au-msg2"), b = $("#au-restore"); b.disabled = true; msg.className = "verdict"; msg.textContent = "Looking you up…";
+    try { const p = await bvDB.api("restore", { method: "POST", json: { code: $("#au-code").value } }); setPlayer(p); await signedIn(); closeAuth(); toast("Welcome back, " + (window.bvMe?.name || "explorer") + "!"); SFX.play("coins", 4); }
+    catch (e) { msg.className = "verdict err"; msg.textContent = /bad_code/.test(e.message) ? "That code doesn’t match an explorer. Check it and try again." : "Couldn’t reach the server. Try again."; } b.disabled = false; };
+  $("#au-code").onkeydown = e => { if (e.key === "Enter") $("#au-restore").click(); };
+  $("#au-savename").onclick = async () => { const nm = $("#au-rename").value.trim(), msg = $("#au-msg3"); if (nm.length < 2) { msg.textContent = "At least 2 letters."; return; }
+    try { const r = await bvDB.api("me/name", { method: "PUT", json: { name: nm } }); window.bvMe.name = r.name; const p = getPlayer(); if (p) { p.name = r.name; setPlayer(p); } paintAcct(); msg.className = "verdict ok"; msg.textContent = "Saved."; } catch (e) { msg.className = "verdict err"; msg.textContent = "Couldn’t save. Try again."; } };
+  $("#au-copy").onclick = async () => { try { await navigator.clipboard.writeText(window.bvMe?.code || ""); toast("Code copied"); } catch (e) { toast("Long-press the code to copy it"); } };
   paintAcct();
+  if (getPlayer()) await signedIn();
   if (!window.NI) return;
-  try { const st = await NI.getSettings(); if (st?.providers?.google) { const g = $("#au-google"); g.hidden = false; g.onclick = () => NI.oauthLogin("google"); } } catch (e) {}
-  // One button: sign in if the account exists, otherwise create it.
-  $("#au-form").onsubmit = async e => {
-    e.preventDefault(); const em = $("#au-email").value.trim(), pw = $("#au-pw").value, msg = $("#au-msg"); msg.className = "verdict";
-    if (!/^\S+@\S+\.\S+$/.test(em)) { msg.textContent = "Enter your email address."; return; }
-    if (pw.length < 8) { msg.textContent = "Passwords need at least 8 characters."; return; }
-    $("#au-go").disabled = true; msg.textContent = "One moment…";
-    try { const u = await NI.login(em, pw); await afterLogin(u, false); }
-    catch (x1) {
-      const m1 = String(x1?.message || "").toLowerCase();
-      if (m1.includes("confirm")) { msg.className = "verdict err"; msg.textContent = "Check your inbox for the confirmation link we sent, then come back."; $("#au-go").disabled = false; return; }
-      try {
-        await NI.signup(em, pw, {});
-        let u = null; try { u = await NI.getUser(); } catch (x) {} if (!u) { try { u = await NI.login(em, pw); } catch (x) {} }
-        if (u) await afterLogin(u, true);
-        else { msg.className = "verdict ok"; msg.textContent = "Almost there! We emailed a link to " + em + ". Tap it to finish."; }
-      } catch (x2) {
-        const m2 = String(x2?.message || "").toLowerCase();
-        msg.className = "verdict err";
-        if (m2.includes("already") || m2.includes("registered") || m2.includes("exists")) { msg.textContent = "Wrong password for that email."; $("#au-forgot").hidden = false; }
-        else msg.textContent = authErr(x2);
-      }
-    }
-    $("#au-go").disabled = false;
-  };
-  $("#au-nmgo").onclick = async () => { const nm = $("#au-nm").value.trim(), msg = $("#au-msg4"); if (nm.length < 2) { msg.textContent = "Pick a name with at least 2 letters."; return; } $("#au-nmgo").disabled = true; try { await NI.updateUser({ data: { full_name: nm } }); await NI.refreshSession?.(); const me = (await bvDB.api("me")).user; if (me) window.bvMe = { ...window.bvMe, ...me }; paintAcct(); closeAuth(); celebrate("Welcome, " + nm + "!", "Your expedition is saved"); } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } $("#au-nmgo").disabled = false; };
-  $("#au-forgot").onclick = async () => { const em = $("#au-email").value.trim(), msg = $("#au-msg"); if (!/^\S+@\S+\.\S+$/.test(em)) { msg.textContent = "Type your email above first."; return; } try { await NI.requestPasswordRecovery(em); msg.className = "verdict ok"; msg.textContent = "Check your email for a link to reset your password."; } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } };
-  $("#au-out").onclick = async () => { clearTimeout(progT); if (progReady) { try { await bvDB.api("me/progress", { method: "PUT", json: { found, answers, hints, relics, uploads, firsts } }); } catch (e) {} } try { await NI.logout(); } catch (e) {} PROG_KEYS.forEach(k => { try { localStorage.removeItem(KEY + k); } catch (e) {} }); location.reload(); };
-  $("#au-savename").onclick = async () => { const nm = $("#au-rename").value.trim(), msg = $("#au-msg2"); if (nm.length < 2) { msg.textContent = "Pick a name with at least 2 letters."; return; } try { await NI.updateUser({ data: { full_name: nm } }); await NI.refreshSession?.(); const me = (await bvDB.api("me")).user; if (me) window.bvMe = { ...window.bvMe, ...me }; paintAcct(); msg.className = "verdict ok"; msg.textContent = "Saved. The board updates within a minute."; } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } };
-  $("#au-setpw").onclick = async () => { const pw = $("#au-newpw").value, msg = $("#au-msg3"); if (pw.length < 8) { msg.textContent = "Use at least 8 characters."; return; } try { await NI.updateUser({ password: pw }); msg.className = "verdict ok"; msg.textContent = "Password saved."; setTimeout(closeAuth, 900); } catch (x) { msg.className = "verdict err"; msg.textContent = authErr(x); } };
-  let cb = null; try { cb = await NI.handleAuthCallback(); } catch (e) { toast("That link has expired. Try again."); }
-  let u = cb?.user || null; if (!u) { try { u = await NI.getUser(); } catch (e) {} }
-  if (u) await signedIn(u);
-  if (cb?.type === "confirmation" && u) { if (!u.name) { showPane("auname"); $("#authsheet").hidden = false; } else celebrate("Welcome aboard!", "Your expedition is saved"); }
-  if (cb?.type === "oauth" && u) toast("Signed in as " + (window.bvMe?.name || "explorer"));
-  if (cb?.type === "recovery") { showPane("aureset"); $("#authsheet").hidden = false; }
+  try { const st = await NI.getSettings(); googleOn = !!st?.providers?.google; } catch (e) {}
+  document.querySelectorAll("[data-google]").forEach(g => { g.hidden = !googleOn; g.onclick = () => { try { sessionStorage.setItem("bv-google", "login"); } catch (e) {} NI.oauthLogin("google"); }; });
+  // Back from Google
+  let cb = null; try { cb = await NI.handleAuthCallback(); } catch (e) {}
+  if (cb?.type === "oauth" || cb?.user) {
+    let intent = ""; try { intent = sessionStorage.getItem("bv-google") || ""; sessionStorage.removeItem("bv-google"); } catch (e) {}
+    try {
+      if (intent === "link" && getPlayer()) { await bvDB.api("me/link", { method: "POST" }); window.bvMe.google = true; toast("Backed up with Google"); SFX.play("stamp"); }
+      else { const p = await bvDB.api("google", { method: "POST" }); setPlayer(p); await signedIn(); toast("Welcome back, " + (window.bvMe?.name || "explorer") + "!"); }
+    } catch (e) { toast("Google sign-in didn’t finish. Try again."); }
+  } else if (!getPlayer()) {
+    // an older email or Google session on this phone: turn it into an explorer account
+    try { const u = await NI.getUser(); if (u) { const p = await bvDB.api("google", { method: "POST" }); setPlayer(p); await signedIn(); } } catch (e) {}
+  }
 })();
