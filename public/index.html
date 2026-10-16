@@ -379,6 +379,8 @@ h1 .flame{width:.8em;height:.95em;flex:none;filter:drop-shadow(0 0 10px rgba(255
 .cand.gone img{filter:grayscale(1) brightness(.25)}.cand.gone span{font-family:var(--f-label);font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--dust)}
 .cracked{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(46,230,166,.12);border:1px solid rgba(46,230,166,.45);color:var(--bone)}
 .hero.unk{min-height:96px;background:radial-gradient(circle at 50% 40%,#16305a,#08111F)}
+.snap{display:inline-flex;gap:10px;align-items:center;justify-content:center;width:100%;cursor:pointer}.snap svg{width:24px;height:24px}
+.proofimg{display:block;width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin-top:10px;border:2px solid var(--torch)}
 /* ===== Accounts ===== */
 #authsheet{z-index:40}#howsheet{z-index:35}.toast{z-index:55}
 .hbtns{display:flex;gap:6px}
@@ -727,9 +729,8 @@ function paintCard(){
   const heroPhoto = f ? ph : null;
   const idx = SITES.indexOf(s);
   const tests = [];
-  if (!f) {
-    if (s.q) tests.push({ kind: "field", label: "Or answer this at the site", text: s.q.text, opts: s.q.opts, a: s.q.a });
-  } else {
+  if (f) {
+    if (s.q) tests.push({ kind: "detail", label: "Look closer · bonus", text: s.q.text, opts: s.q.opts, a: s.q.a });
     if (s.year) tests.push(decadeQ(s));
   }
   const ans = k => answers[s.id + ":" + k];
@@ -785,12 +786,18 @@ function leadBox(s, testHTML){
         <div class="lineup">${lineup(s).map(o => { const bad = wrong.includes(o.id), gone = cut.includes(o.id); return `<button class="cand${bad ? " wrong" : ""}${gone ? " gone" : ""}" data-id="${o.id}" type="button" ${bad || gone ? "disabled" : ""} aria-label="${bad ? "Not this one" : "Choose this building"}"><img src="${IMG(candPhoto(o))}" alt="" loading="lazy"><span>${bad ? "✕" : gone ? "Ruled out" : ""}</span></button>`; }).join("")}</div>
         <div class="row2"><span class="hint">First try earns 50 Marthas. Each miss costs 20 of that.</span>${hints[s.id] ? "" : `<button class="btn" id="hintbtn" type="button">Ask a local: rule out two (20 Marthas)</button>`}</div>`}</div>`;
   const step2 = `<div class="box${ok ? "" : " locked"}"><h3><span class="stepno">2</span>Prove you’re there</h3>
-    ${ok ? `<p class="hint">Go to <strong>${esc(s.addr)}</strong>, then check in. Standing there earns the 50-Martha field bonus.</p>
-      <div class="row2"><button class="btn go" id="gps" type="button">Check in with my location</button><a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.addr.split(" / ")[0] + ", Birmingham, MI")}" target="_blank" rel="noopener">Directions</a></div>
-      <p class="verdict" id="gpsmsg" aria-live="polite"></p>
-      <div id="honor" hidden><p class="hint">Your phone couldn’t share its location. If you’re standing at the site, you can check in on your honor (no field bonus).</p><div class="row2"><button class="btn" id="checkin" type="button">I’m standing here</button></div></div>`
-      : `<p class="hint">Crack the lead first. Then head there and check in.</p>`}</div>`;
-  return step1 + step2 + (ok ? testHTML : "");
+    ${ok ? `<p class="hint">Go to <strong>${esc(s.addr)}</strong> and photograph the building from the sidewalk. Your photo becomes this site’s Layer 3, and being there earns the 50-Martha field bonus.</p>
+      <input id="proof-in" type="file" accept="image/*" capture="environment" hidden>
+      ${proof && proof.site === s.id ? `<img class="proofimg" src="${proof.url}" alt="Your photo of the site">
+        <label class="hint" for="proof-txt" style="display:block;margin-top:10px">What’s here now? <small>(optional, shows with your photo)</small></label>
+        <textarea id="proof-txt" maxlength="280" placeholder="e.g. Still white clapboard; the porch has been rebuilt.">${esc(proof.text || "")}</textarea>
+        <div class="row2"><button class="btn go big" id="proof-go" type="button">Submit proof</button></div>
+        <div class="row2"><label class="introlink" for="proof-in">Retake photo</label></div>`
+      : `<div class="row2"><label class="btn go big snap" for="proof-in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="4"/></svg>Snap the building</label></div>
+        <div class="row2"><a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.addr.split(" / ")[0] + ", Birmingham, MI")}" target="_blank" rel="noopener">Directions</a></div>`}
+      <p class="verdict" id="gpsmsg" aria-live="polite"></p>`
+      : `<p class="hint">Crack the lead first. Then head there and photograph it.</p>`}</div>`;
+  return step1 + step2;
 }
 function wireLead(s){
   document.querySelectorAll(".cand:not([disabled])").forEach(b => b.onclick = () => {
@@ -800,16 +807,27 @@ function wireLead(s){
     const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; paintTop();
   });
   const hb = $("#hintbtn"); if (hb) hb.onclick = () => { if (xp() < 20) { toast("You need 20 Marthas to ask a local."); return; } hints[s.id] = Date.now(); save("hints", hints); SFX.play("stamp"); const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; paintTop(); };
-  const ci = $("#checkin"); if (ci) ci.onclick = () => discover(false);
-  const g = $("#gps"); if (g) g.onclick = () => {
-    const msg = $("#gpsmsg"), honor = () => { $("#honor").hidden = false; };
-    if (!navigator.geolocation) { msg.textContent = "This phone can’t share its location."; honor(); return; }
-    g.disabled = true; msg.className = "verdict"; msg.textContent = "Finding you…";
-    navigator.geolocation.getCurrentPosition(pos => {
-      g.disabled = false; const d = distM(pos.coords.latitude, pos.coords.longitude, s.lat, s.lon), slack = Math.min(150, pos.coords.accuracy || 0);
-      if (d <= 200 + slack) { msg.textContent = ""; discover(true); }
-      else { msg.className = "verdict err"; msg.textContent = d > 1500 ? `You’re about ${(d / 1609).toFixed(1)} miles away. Head to ${s.street} and try again.` : `You’re about ${Math.round(d / 0.3048 / 10) * 10} feet away. Get closer and try again.`; SFX.play("wrong"); }
-    }, err => { g.disabled = false; msg.className = "verdict err"; msg.textContent = err.code === 1 ? "Location is turned off for this site." : "Couldn’t get a location fix."; honor(); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  const pin = $("#proof-in"); if (pin) pin.onchange = async () => {
+    const file = pin.files && pin.files[0]; if (!file) return; const msg = $("#gpsmsg"); msg.className = "verdict"; msg.textContent = "Preparing photo…";
+    try { const blob = await shrink(file); const keep = $("#proof-txt")?.value || ""; if (proof) URL.revokeObjectURL(proof.url); proof = { site: s.id, blob, url: URL.createObjectURL(blob), text: keep }; SFX.play("stamp"); const top = $("#card").scrollTop; paintCard(); $("#card").scrollTop = top; }
+    catch (e) { msg.className = "verdict err"; msg.textContent = "Couldn’t read that photo. Try again."; }
+  };
+  const pg = $("#proof-go"); if (pg) pg.onclick = async () => {
+    const msg = $("#gpsmsg"); pg.disabled = true; msg.className = "verdict"; msg.textContent = "Checking where you are…";
+    const where = await new Promise(res => { if (!navigator.geolocation) return res({ err: "none" });
+      navigator.geolocation.getCurrentPosition(p => res({ p }), e => res({ err: e.code === 1 ? "denied" : "nofix" }), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }); });
+    let field = false;
+    if (where.p) {
+      const d = distM(where.p.coords.latitude, where.p.coords.longitude, s.lat, s.lon), slack = Math.min(150, where.p.coords.accuracy || 0);
+      if (d > 200 + slack) { pg.disabled = false; msg.className = "verdict err"; SFX.play("wrong");
+        msg.textContent = d > 1500 ? `You’re about ${(d / 1609).toFixed(1)} miles away. Head to ${s.street}, then snap it again.` : `You’re about ${Math.round(d / 0.3048 / 10) * 10} feet away. Get closer and try again.`; return; }
+      field = true;
+    }
+    const text = ($("#proof-txt")?.value || "").trim(), blob = proof.blob; URL.revokeObjectURL(proof.url); proof = null;
+    discover(field);
+    if (!field) setTimeout(() => toast(where.err === "denied" ? "Turn on location next time for the 50-Martha field bonus." : "No location fix, so no field bonus this time."), 2700);
+    if (myId) { try { const r = await postLayer3(s, blob, text || "Field photo"); await onSiteAction("photo", s.id); paintTop(); if (r.earned) setTimeout(() => toast(`Your photo is now Layer 3! +${r.earned} Marthas${r.note.length ? " (" + r.note.join(", ") + ")" : ""}`), 2800); } catch (e) { setTimeout(() => toast("Your photo didn’t upload. Add it again under Layer 3."), 2800); } }
+    else { pending = { blob, url: URL.createObjectURL(blob), text }; setTimeout(() => toast("Sign in to post your photo as Layer 3 and earn 75 more."), 2800); }
   };
 }
 function defaultClue(s){
@@ -1119,6 +1137,7 @@ function syndicateCard(){
 }
 
 /* ---------- Layer 3: explorers' photos (shared) ---------- */
+let proof = null;
 let todayDocs = [], todayUnsub = null, pending = null, pnames = {};
 async function resolveNames(ids){
   ids = [...new Set(ids.filter(i => i && !(i in pnames)))]; if (!user || !ids.length) return;
@@ -1160,22 +1179,25 @@ function wireUpload(s){
     if (text.length < 5) { msg.textContent = "Add a short description first."; return; }
     post.disabled = true; msg.textContent = "Uploading…";
     try {
-      const up = await assets.upload(pending.blob, { type: "image/jpeg" });
-      await db.collection("photos").add({ stop: s.id, asset: up.id, text, at: Date.now(), author: myId || null });
-      URL.revokeObjectURL(pending.url); pending = null;
-      const wasEmpty = todayDocs.length === 0, first = !uploads[s.id], before = Object.keys(uploads).length;
-      uploads[s.id] = Date.now(); save("uploads", uploads);
-      let earned = first ? 75 : 0, note = [];
-      if (first && wasEmpty && !firsts[s.id]) { firsts[s.id] = Date.now(); save("firsts", firsts); earned += 150; note.push("first explorer here"); }
-      const after = Object.keys(uploads).length;
-      DIG_MILESTONES.forEach(([n, b, name]) => { if (before < n && after >= n) { earned += b; note.push(name + " badge"); } });
+      const r = await postLayer3(s, pending.blob, text); URL.revokeObjectURL(pending.url); pending = null;
       layer = "today"; shot = 0; await onSiteAction("photo", s.id); paintTop();
-      toast(earned ? `Layer 3 excavated! +${earned} Marthas${note.length ? " (" + note.join(", ") + ")" : ""}` : "Photo posted");
+      toast(r.earned ? `Layer 3 excavated! +${r.earned} Marthas${r.note.length ? " (" + r.note.join(", ") + ")" : ""}` : "Photo posted");
     } catch (e) { post.disabled = false;
       const c = e && e.code;
       msg.textContent = c === "too_large" ? "That photo is too large. Try a smaller one." : c === "unsupported_type" ? "That file type isn’t supported. Use a JPEG or PNG photo." : c === "quota_exceeded" ? "The expedition’s photo storage is full." : c === "invalid_argument" ? "You don’t have permission to add photos here." : "Couldn’t upload. Check your connection and try again.";
     }
   };
+}
+async function postLayer3(s, blob, text){
+  const up = await assets.upload(blob, { type: "image/jpeg" });
+  await db.collection("photos").add({ stop: s.id, asset: up.id, text, at: Date.now(), author: myId || null });
+  const wasEmpty = todayDocs.length === 0, first = !uploads[s.id], before = Object.keys(uploads).length;
+  uploads[s.id] = Date.now(); save("uploads", uploads);
+  let earned = first ? 75 : 0; const note = [];
+  if (first && wasEmpty && !firsts[s.id]) { firsts[s.id] = Date.now(); save("firsts", firsts); earned += 150; note.push("first explorer here"); }
+  const after = Object.keys(uploads).length;
+  DIG_MILESTONES.forEach(([n, b, name]) => { if (before < n && after >= n) { earned += b; note.push(name + " badge"); } });
+  return { earned, note };
 }
 // Resize and re-encode in the browser: smaller uploads, and the camera's location metadata is dropped.
 function shrink(file){
