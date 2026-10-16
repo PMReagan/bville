@@ -381,6 +381,28 @@ h1 .flame{width:.8em;height:.95em;flex:none;filter:drop-shadow(0 0 10px rgba(255
 .hero.unk{min-height:96px;background:radial-gradient(circle at 50% 40%,#16305a,#08111F)}
 .snap{display:inline-flex;gap:10px;align-items:center;justify-content:center;width:100%;cursor:pointer}.snap svg{width:24px;height:24px}
 .proofimg{display:block;width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin-top:10px;border:2px solid var(--torch)}
+/* ===== People's Register ===== */
+.tabs{grid-template-columns:repeat(5,minmax(0,1fr))}.tab{font-size:clamp(11px,3.3vw,16px);letter-spacing:.02em;padding-inline:0}
+#nomsheet{z-index:38}
+.reghead{background:linear-gradient(160deg,rgba(199,125,255,.16),var(--cave));border:1px solid rgba(199,125,255,.45);border-radius:16px;padding:16px}
+.reghead .bh{color:#D9B3FF}
+.regh{font-family:var(--f-label);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:14px;color:var(--dust);margin:20px 0 8px}
+.noms{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.nom{position:relative;display:flex;flex-direction:column;border-radius:14px;overflow:hidden;background:var(--cave);border:1px solid var(--line);text-decoration:none;color:var(--bone);transition:transform .2s,border-color .2s}
+.nom:hover{transform:translateY(-3px);border-color:var(--orchid)}
+.nom img{aspect-ratio:4/3;width:100%;object-fit:cover;display:block;background:var(--rock)}
+.nom .nb{position:absolute;top:8px;left:8px;font-family:var(--f-label);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:6px;background:rgba(8,17,31,.82);color:#D9B3FF}
+.nom.adm{border-color:var(--torch)}.nom.adm .nb{background:linear-gradient(135deg,#FFE3A6,var(--torch));color:#2A1604}
+.nt{display:grid;gap:3px;padding:8px 10px 10px}.nt b{font-size:15px;line-height:1.2}.nt small{color:var(--dust);font-size:12px}
+.nbar{height:6px;border-radius:99px;background:#0A1628;overflow:hidden;margin-top:4px}.nbar i{display:block;height:100%;background:linear-gradient(90deg,var(--orchid),var(--torch))}
+.two{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.chk{display:flex;gap:10px;align-items:center;margin:2px 0 6px;cursor:pointer}.chk input{width:20px;height:20px;accent-color:var(--torch)}
+#nomcard textarea{width:100%;min-height:90px;font:inherit;font-size:16px;color:var(--bone);background:var(--night);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
+.nompin path{fill:var(--orchid);stroke:#F1DEFF;stroke-width:1;filter:drop-shadow(0 0 4px rgba(199,125,255,.9));cursor:pointer}
+.nompin.adm path{fill:var(--torch);stroke:#FFE3A6;filter:drop-shadow(0 0 5px rgba(255,180,60,.9))}
+.regnew{display:inline-flex;gap:8px;align-items:center;text-decoration:none;color:var(--bone);background:rgba(199,125,255,.16);border:1px solid rgba(199,125,255,.5);border-radius:99px;padding:6px 14px;font-size:14px;backdrop-filter:blur(6px)}
+.regnew b{font-family:var(--f-label);letter-spacing:.12em;text-transform:uppercase;color:#D9B3FF;font-size:13px}
+.legend .dot.reg{background:var(--orchid);border-color:#F1DEFF;border-radius:2px;transform:rotate(45deg)}
 /* ===== Accounts ===== */
 #authsheet{z-index:40}#howsheet{z-index:35}.toast{z-index:55}
 .hbtns{display:flex;gap:6px}
@@ -468,10 +490,12 @@ footer p{margin:0 0 8px}
     <button class="cta" id="start" type="button">Start the hunt</button>
     <button class="introlink" id="introsign" type="button" data-auth="code">Played before? Enter your explorer code</button>
     <p class="who" id="introwho"></p>
+    <a class="regnew" href="#nominate"><b>New</b> The People’s Register: nominate a house and let Birmingham vote</a>
     <ul class="three"><li><b>Follow</b>the lead</li><li><b>Dig</b>through time</li><li><b>Defend</b>the town</li></ul>
   </div>
   <div class="scroll" aria-hidden="true"></div>
 </section>
+<div class="sheet" id="nomsheet" hidden><div class="card authcard" id="nomcard" role="dialog" aria-modal="true" aria-label="Nominate a house"></div></div>
 <div class="sheet" id="authsheet" hidden><div class="card authcard" role="dialog" aria-modal="true" aria-labelledby="au-h">
   <button class="btn" id="aux" type="button" style="float:right">Close</button>
   <div id="aujoin">
@@ -519,15 +543,16 @@ footer p{margin:0 0 8px}
   <nav class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="map" aria-selected="true">Map</button>
     <button class="tab" role="tab" data-tab="journal" aria-selected="false">Journal</button>
+    <button class="tab" role="tab" data-tab="reg" aria-selected="false">Register</button>
     <button class="tab" role="tab" data-tab="exp" aria-selected="false">Quests</button>
-    <button class="tab" role="tab" data-tab="board" aria-selected="false">Marthas</button>
+    <button class="tab" role="tab" data-tab="board" aria-selected="false">Board</button>
   </nav>
 
   <section id="p-map">
     <div class="mapwrap">
       <div class="zooms" role="group" aria-label="Map area"></div>
       <svg id="map" viewBox="0 0 400 420" role="img" aria-label="Expedition map of Birmingham with hidden sites"></svg>
-      <div class="legend"><span><i class="dot"></i>Rumored site</span><span><i class="dot f"></i>Discovered</span><span>Tap a ? to follow the lead</span></div>
+      <div class="legend"><span><i class="dot"></i>Rumored site</span><span><i class="dot f"></i>Discovered</span><span><i class="dot reg"></i>Nominee</span><span>Tap a ? to follow the lead</span></div>
     </div>
     <div class="alert" id="alert" aria-live="polite"></div>
   </section>
@@ -535,6 +560,7 @@ footer p{margin:0 0 8px}
     <div class="filters" id="filters"></div>
     <div class="grid" id="grid"></div>
   </section>
+  <section id="p-reg" hidden><div id="reg"></div></section>
   <section id="p-exp" hidden><div class="exps" id="exps"></div></section>
   <section id="p-board" hidden>
     <div class="boardhead"><span class="coin big">M</span><div><h3 class="bh">The Martha Board</h3><p class="hint">Explorers earn Marthas, named for Martha Baldwin: her name is on the library, and she rests in Greenwood Cemetery. Find sites, solve field tests, date your finds, excavate Layer 3 with today’s photos and recover relics to climb the board.</p></div></div>
@@ -572,6 +598,7 @@ const KEY = "bville-exp-";
 const load = (k, d) => { try { const v = localStorage.getItem(KEY + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
 const PROG_KEYS = ["found", "answers", "hints", "relics", "uploads", "firsts"];
 const save = (k, v) => { try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) {} if (PROG_KEYS.includes(k)) queueProgress(); };
+let NOMS = [], nomsT = 0, nomPhoto = null; // People's Register (filled from the server)
 let found = load("found", {}), answers = load("answers", {}), hints = load("hints", {}), relics = load("relics", {}), uploads = load("uploads", {}), firsts = load("firsts", {});
 const DIG_MILESTONES = [[5, 100, "Field Photographer"], [10, 200, "Site Recorder"], [25, 500, "Master Excavator"], [78, 1500, "Keeper of Layer 3"]];
 const STARTER = 250; // every explorer starts with a purse, so they can try hints and defenses right away
@@ -584,7 +611,7 @@ function xp(){
   for (const id in uploads) x += 75;
   for (const id in firsts) x += 150;
   const nd = Object.keys(uploads).length; DIG_MILESTONES.forEach(([n, b]) => { if (nd >= n) x += b; });
-  x += worldXP();
+  x += worldXP(); x += regXP();
   return Math.max(0, x);
 }
 function rankOf(x){ let r = RANKS[0], next = null; for (let i = 0; i < RANKS.length; i++) { if (x >= RANKS[i][0]) { r = RANKS[i]; next = RANKS[i + 1] || null; } } return [r, next]; }
@@ -601,7 +628,7 @@ function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = fals
 
 /* ---------- tabs ---------- */
 let tab = load("tab", "map");
-function showTab(t){ tab = t; save("tab", t); document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t)); $("#p-map").hidden = t !== "map"; $("#p-journal").hidden = t !== "journal"; $("#p-exp").hidden = t !== "exp"; $("#p-board").hidden = t !== "board"; render(); animatePanel("#p-" + t); if (t === "journal") { const g = $("#grid"); g.classList.remove("enter"); void g.offsetWidth; g.classList.add("enter"); setTimeout(() => g.classList.remove("enter"), 2500); } if (t === "map") { $("#map").classList.add("intro"); setTimeout(() => $("#map").classList.remove("intro"), 1400); } if (t === "exp") { const e = $("#exps"); e.classList.add("exps-in"); setTimeout(() => e.classList.remove("exps-in"), 1200); } }
+function showTab(t){ tab = t; save("tab", t); document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t)); $("#p-map").hidden = t !== "map"; $("#p-journal").hidden = t !== "journal"; $("#p-exp").hidden = t !== "exp"; $("#p-board").hidden = t !== "board"; $("#p-reg").hidden = t !== "reg"; if (t === "reg") loadNoms(true); render(); animatePanel("#p-" + t); if (t === "journal") { const g = $("#grid"); g.classList.remove("enter"); void g.offsetWidth; g.classList.add("enter"); setTimeout(() => g.classList.remove("enter"), 2500); } if (t === "map") { $("#map").classList.add("intro"); setTimeout(() => $("#map").classList.remove("intro"), 1400); } if (t === "exp") { const e = $("#exps"); e.classList.add("exps-in"); setTimeout(() => e.classList.remove("exps-in"), 1200); } }
 document.querySelectorAll(".tab").forEach(b => b.onclick = () => showTab(b.dataset.tab));
 
 /* ---------- map ---------- */
@@ -648,6 +675,11 @@ function drawMap(){
     g.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSite(s.id); } };
     g.onmouseenter = e => tipShow(e, f ? `${s.no} · ${s.name}` : `${s.no} · rumored site on ${s.street}`); g.onmousemove = tipMove; g.onmouseleave = () => $("#tip").hidden = true;
   });
+  // People's Register pins
+  NOMS.filter(n => n.lat != null).forEach(n => { const [x, y] = PX(n.lat, n.lon); if (x < 4 || y < 4 || x > W - 4 || y > H - 4) return;
+    const g = el("g", { class: "nompin" + (n.status === "admitted" ? " adm" : ""), transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})`, tabindex: 0, role: "link", "aria-label": n.title }, m);
+    el("path", { d: `M0 ${-R * 1.2} L${R * .32} ${-R * .38} L${R * 1.15} ${-R * .36} L${R * .5} ${R * .18} L${R * .72} ${R} L0 ${R * .52} L${-R * .72} ${R} L${-R * .5} ${R * .18} L${-R * 1.15} ${-R * .36} L${-R * .32} ${-R * .38}Z` }, g);
+    g.onclick = () => location.href = "/n/" + n.id; g.onmouseenter = e => tipShow(e, (n.status === "admitted" ? "On the People’s Register: " : "Nominee: ") + n.title); g.onmousemove = tipMove; g.onmouseleave = () => $("#tip").hidden = true; });
   // compass
   const c = el("g", { transform: `translate(${W - 26} 30)` }, m); el("circle", { r: 15, fill: "none", stroke: "#3A5156" }, c); el("path", { d: "M0 -12 L4 0 L0 -3 L-4 0Z", fill: "var(--torch)" }, c); const n = el("text", { y: 24, "text-anchor": "middle", class: "slabel", "font-size": 8 }, c); n.textContent = "N";
   const z = $(".zooms"); z.innerHTML = AREAS.map(([k, lab]) => `<button class="chip" data-a="${k}" aria-pressed="${k === area}">${lab}</button>`).join("");
@@ -690,7 +722,7 @@ function drawExps(){
       ${done ? `<div class="relic">${RELIC}Relic recovered</div>` : ""}</article>`; }).join("");
   $("#exps").querySelectorAll(".mini button").forEach(b => b.onclick = () => openSite(b.dataset.id));
 }
-function render(){ paintTop(); if (tab === "map") { drawAlert(); drawMap(); } if (tab === "journal") drawJournal(); if (tab === "exp") drawExps(); if (tab === "board") drawBoard(); }
+function render(){ paintTop(); if (tab === "map") { drawAlert(); drawMap(); } if (tab === "journal") drawJournal(); if (tab === "exp") drawExps(); if (tab === "board") drawBoard(); if (tab === "reg") drawReg(); }
 
 /* ---------- dossier ---------- */
 let cur = null, layer = "archive", shot = 0;
@@ -1278,6 +1310,77 @@ function welcome(){
   const close = () => { d.remove(); document.body.style.overflow = ""; };
   $("#wl-go").onclick = async () => { const n = $("#wl-name"); if (n && typeof joinAs === "function") { $("#wl-go").disabled = true; try { await joinAs(n.value.trim()); } catch (e) {} } close(); if (window.bvMe?.name && n) toast("Welcome, " + window.bvMe.name + "! Your progress is saved."); }; d.onclick = e => { if (e.target === d) close(); }; ($("#wl-name") || $("#wl-go")).focus();
 }
+
+/* ---------- The People's Register: nominate a house, share it, let Birmingham vote ---------- */
+const NEED_VOTES = 25;
+async function loadNoms(force){
+  if (!window.bvDB) return; if (!force && Date.now() - nomsT < 20000) return; nomsT = Date.now();
+  try { NOMS = (await bvDB.api("noms")).noms || []; } catch (e) { return; }
+  if (tab === "reg") drawReg(); if (tab === "map") drawMap(); paintTop();
+}
+setInterval(() => { if (!document.hidden) loadNoms(); }, 30000);
+function regXP(){
+  if (!myId) return 0; const mine = NOMS.filter(n => n.by === myId);
+  return 25 * Math.min(mine.length, 5) + 300 * mine.filter(n => n.status === "admitted").length + 25 * NOMS.filter(n => n.status === "admitted" && n.myVote === "yes" && n.by !== myId).length;
+}
+function drawReg(){
+  const box = $("#reg"); if (!box) return;
+  const adm = NOMS.filter(n => n.status === "admitted"), open = NOMS.filter(n => n.status !== "admitted");
+  const card = n => `<a class="nom${n.status === "admitted" ? " adm" : ""}" href="/n/${encodeURIComponent(n.id)}"><img src="/api/img/${encodeURIComponent(n.asset)}" alt="" loading="lazy">
+    <span class="nb">${n.status === "admitted" ? "On the Register" : "Nominee"}</span>
+    <span class="nt"><b>${esc(n.title)}</b><small>${n.year ? esc(n.year) + " · " : ""}${esc(n.addr || n.street)}</small>
+    ${n.status === "admitted" ? "" : `<span class="nbar"><i style="width:${Math.min(100, n.yes / NEED_VOTES * 100)}%"></i></span><small>${n.yes} of ${NEED_VOTES} Historic votes${n.by === myId ? " · yours" : ""}</small>`}</span></a>`;
+  box.innerHTML = `<div class="reghead"><h3 class="bh">The People’s Register</h3>
+      <p class="story">Every house has a story. Nominate one, share the link, and let Birmingham vote. At ${NEED_VOTES} “Historic!” votes it joins the Register and becomes a new site on the map.</p>
+      <button class="btn go big" id="nominate" type="button">Nominate a house</button>
+      <p class="hint">Earn 25 Marthas for each nomination, 300 when yours makes the Register, and 25 when a house you voted for gets in.</p></div>
+    ${open.length ? `<h4 class="regh">Up for a vote</h4><div class="noms">${open.map(card).join("")}</div>` : `<p class="hint" style="margin-top:14px">No nominations yet. Be the first to put a house up for a vote.</p>`}
+    ${adm.length ? `<h4 class="regh">On the Register</h4><div class="noms">${adm.map(card).join("")}</div>` : ""}`;
+  $("#nominate").onclick = openNominate;
+}
+function openNominate(){
+  if (!myId) { toast("Pick an explorer name first. No password needed."); openAuth(); return; }
+  nomPhoto = null; const d = $("#nomsheet"); d.hidden = false; document.body.style.overflow = "hidden"; paintNomForm();
+}
+function closeNominate(){ $("#nomsheet").hidden = true; document.body.style.overflow = $("#sheet").hidden ? "" : "hidden"; if (nomPhoto) { URL.revokeObjectURL(nomPhoto.url); nomPhoto = null; } }
+function paintNomForm(){
+  const c = $("#nomcard");
+  c.innerHTML = `<button class="btn" id="nomx" type="button" style="float:right">Close</button>
+    <h2>Nominate a house</h2><p class="hint">Photograph it from the sidewalk. Keep people and licence plates out of the picture, and don’t name the owners.</p>
+    <input id="nom-in" type="file" accept="image/*" hidden>
+    ${nomPhoto ? `<img class="proofimg" src="${nomPhoto.url}" alt="Your photo"><div class="row2"><label class="introlink" for="nom-in">Change photo</label></div>`
+      : `<div class="row2"><label class="btn go big snap" for="nom-in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="4"/></svg>Take or choose a photo</label></div>`}
+    <label class="fld"><span>Give it a name</span><input id="nom-title" maxlength="60" placeholder="e.g. The Green Door Bungalow"></label>
+    <div class="two"><label class="fld"><span>House number</span><input id="nom-num" maxlength="8" inputmode="numeric" placeholder="1128"></label>
+      <label class="fld"><span>Street</span><input id="nom-street" maxlength="40" placeholder="Pierce St"></label></div>
+    <label class="chk"><input type="checkbox" id="nom-exact"> Show the exact address and a pin on the map</label>
+    <p class="hint" style="margin-top:-4px">Leave unticked to show only the street name.</p>
+    <label class="fld"><span>Year built <small>(if you know it)</small></span><input id="nom-year" maxlength="12" placeholder="c. 1924"></label>
+    <label class="fld"><span>Why does it deserve a spot?</span><textarea id="nom-story" maxlength="600" placeholder="Original milk door, stained glass on the landing, and the same family since 1951…"></textarea></label>
+    <button class="btn go big" id="nom-go" type="button">Put it up for a vote</button><p class="verdict" id="nom-msg" aria-live="polite"></p>`;
+  const keep = nomPhoto?.form; if (keep) for (const [k, v] of Object.entries(keep)) { const e = $("#" + k); if (e) e.type === "checkbox" ? (e.checked = v) : (e.value = v); }
+  $("#nomx").onclick = closeNominate;
+  $("#nom-in").onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; const form = {}; ["nom-title", "nom-num", "nom-street", "nom-year", "nom-story"].forEach(k => form[k] = $("#" + k).value); form["nom-exact"] = $("#nom-exact").checked;
+    try { const blob = await shrink(f); if (nomPhoto) URL.revokeObjectURL(nomPhoto.url); nomPhoto = { blob, url: URL.createObjectURL(blob), form }; paintNomForm(); } catch (x) { $("#nom-msg").textContent = "Couldn’t read that photo."; } };
+  $("#nom-go").onclick = async () => {
+    const msg = $("#nom-msg"), title = $("#nom-title").value.trim(), street = $("#nom-street").value.trim();
+    if (!nomPhoto) { msg.textContent = "Add a photo first."; return; } if (title.length < 3) { msg.textContent = "Give the house a name."; return; } if (street.length < 3) { msg.textContent = "Which street is it on?"; return; }
+    $("#nom-go").disabled = true; msg.className = "verdict"; msg.textContent = "Uploading…";
+    try {
+      const up = await bvAssets.upload(nomPhoto.blob, { type: "image/jpeg" });
+      const n = await bvDB.api("noms", { method: "POST", json: { title, street, number: $("#nom-num").value.trim(), exact: $("#nom-exact").checked, year: $("#nom-year").value.trim(), story: $("#nom-story").value.trim(), asset: up.id } });
+      URL.revokeObjectURL(nomPhoto.url); nomPhoto = null; NOMS.unshift(n); paintTop(); SFX.play("discover"); burst();
+      const link = location.origin + "/n/" + n.id;
+      $("#nomcard").innerHTML = `<button class="btn" id="nomx" type="button" style="float:right">Close</button><h2>Nominated!</h2>
+        <p class="story"><strong>${esc(n.title)}</strong> is up for a vote. It needs ${NEED_VOTES} “Historic!” votes to join the Register, so share it with neighbours, family and anyone who loves this town.</p>
+        <button class="btn go big" id="nom-share" type="button">Share the vote</button>
+        <div class="row2"><button class="btn" id="nom-copy" type="button">Copy link</button><a class="btn" href="${link}">Open its page</a></div><p class="hint">+25 Marthas for nominating.</p>`;
+      $("#nomx").onclick = () => { closeNominate(); showTab("reg"); };
+      $("#nom-share").onclick = async () => { try { if (navigator.share) await navigator.share({ title: "Should " + n.title + " be historic?", text: "Vote on " + n.title + " for Birmingham’s People’s Register:", url: link }); else { await navigator.clipboard.writeText(link); toast("Link copied"); } } catch (x) {} };
+      $("#nom-copy").onclick = async () => { try { await navigator.clipboard.writeText(link); toast("Link copied"); } catch (x) { toast(link); } };
+    } catch (e) { $("#nom-go").disabled = false; msg.className = "verdict err"; msg.textContent = e.code === "too_large" ? "That photo is too large." : "Couldn’t post. Check your connection and try again."; }
+  };
+}
 /* ---------- Landing ---------- */
 (function intro(){
   const pics = ["walk/img/hunter-a1","ride/img/quartonhomestead-a1","downtown/img/stitched-result1shain","walk/img/raynale-a1","ride/img/greenwood-a1","ride/img/wooster-a1","downtown/img/hawthorne-building-361-e-maple","walk/img/chatfield-a1"];
@@ -1289,6 +1392,8 @@ function welcome(){
   paintIntroLive();
   const go = () => { $("#app").scrollIntoView({ behavior: RM ? "auto" : "smooth" }); setTimeout(welcome, RM ? 0 : 650); };
   $("#start").onclick = go; $(".scroll").onclick = go;
+  const route = () => { if (location.hash === "#nominate" || location.hash === "#register") { $("#app").scrollIntoView(); showTab("reg"); if (location.hash === "#nominate") setTimeout(openNominate, 400); history.replaceState(null, "", location.pathname); } };
+  addEventListener("hashchange", route); setTimeout(route, 300); setTimeout(() => loadNoms(true), 800);
   const openHow = () => { $("#howsheet").hidden = false; document.body.style.overflow = "hidden"; $("#howx").focus(); };
   const closeHow = () => { $("#howsheet").hidden = true; document.body.style.overflow = ""; };
   const sb = $("#snd"); if (sb) sb.onclick = () => SFX.toggle(); const am = $("#ambi"); if (am) am.onchange = () => SFX.setAmbience(am.checked); paintSound();

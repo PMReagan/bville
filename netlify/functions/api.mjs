@@ -129,6 +129,8 @@ export default async (req, context) => {
       await store("images").set(id, buf, { metadata: { type, by: u.id, at: Date.now() } });
       return json({ id, url: "/api/img/" + id });
     }
+    // --- People's Register: nominations, votes, comments
+    if (a === "noms") return await register(req, context, parts.slice(1));
     // --- collections
     if (a === "c" && b) {
       const col = b, s = store(col);
@@ -165,3 +167,93 @@ export default async (req, context) => {
   }
 };
 export const config = { path: "/api/*" };
+
+/* ================= People's Register ================= */
+const ADMIT_AT = 25;
+const voteKey = (nom, v, who) => `${nom}/${v}/${who}`;
+async function tally(nom){
+  const { blobs } = await store("votes").list({ prefix: nom + "/" }); let yes = 0, no = 0;
+  for (const b of blobs) { const v = b.key.split("/")[1]; if (v === "yes") yes++; else if (v === "no") no++; }
+  const c = await store("ncomments").list({ prefix: nom + "/" });
+  return { yes, no, comments: c.blobs.length };
+}
+async function voterId(req){
+  const p = await playerFromHeader(req); if (p) return "pl:" + p.id;
+  const v = (req.headers.get("x-voter") || "").replace(/[^a-z0-9]/gi, ""); return v.length >= 16 ? "v:" + v.slice(0, 40) : null;
+}
+async function geocode(addr){
+  try { const u = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?benchmark=Public_AR_Current&format=json&address=" + encodeURIComponent(addr + ", Birmingham, MI");
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
+    const j = await (await fetch(u, { signal: ctl.signal })).json(); const m = j?.result?.addressMatches?.[0]?.coordinates;
+    return m ? { lat: m.y, lon: m.x } : null; } catch (e) { return null; }
+}
+function publicNom(n, t, mine){
+  const out = { id: n.id, title: n.title, year: n.year || "", story: n.story || "", street: n.street, addr: n.exact ? n.addr : "", lat: n.exact ? n.lat : null, lon: n.exact ? n.lon : null,
+    asset: n.asset, at: n.at, by: n.by, byName: n.byName || "", status: n.status, admittedAt: n.admittedAt || null, ...t };
+  if (mine !== undefined) out.myVote = mine; return out;
+}
+async function myVoteFor(nom, who){ if (!who) return null; const s = store("votes");
+  if (await s.getMetadata(voteKey(nom, "yes", who))) return "yes"; if (await s.getMetadata(voteKey(nom, "no", who))) return "no"; return null; }
+async function maybeAdmit(n, t){
+  if (n.status === "open" && t.yes >= ADMIT_AT && t.yes > t.no) { n.status = "admitted"; n.admittedAt = Date.now(); await store("noms").setJSON(n.id, n); }
+  return n;
+}
+async function register(req, context, parts){
+  const [id, sub, cid, act] = parts, M = req.method, S = store("noms");
+  // list
+  if (!id && M === "GET") {
+    const { blobs } = await S.list(); const who = await voterId(req);
+    const rows = await Promise.all(blobs.map(async b => { const n = await S.get(b.key, { type: "json" }); if (!n || n.status === "hidden") return null;
+      const t = await tally(n.id); await maybeAdmit(n, t); return publicNom(n, t, await myVoteFor(n.id, who)); }));
+    return json({ noms: rows.filter(Boolean).sort((x, y) => y.at - x.at) });
+  }
+  // create (any explorer)
+  if (!id && M === "POST") {
+    const u = await me(); if (!u) return bad("sign_in", 401);
+    const v = await body(req), title = clean(v.title, 60).trim(), street = clean(v.street, 40).trim(), num = clean(v.number, 8).replace(/[^0-9A-Za-z-]/g, "");
+    if (title.length < 3 || street.length < 3 || !v.asset) return bad("bad_body");
+    const nid = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const n = { id: nid, title, year: clean(v.year, 12).trim(), story: clean(v.story, 600).trim(), street, addr: num ? num + " " + street : street, exact: !!v.exact && !!num,
+      asset: clean(v.asset, 64), at: Date.now(), by: u.id, byName: u.name, status: "open" };
+    if (n.exact) { const g = await geocode(n.addr); if (g) { n.lat = g.lat; n.lon = g.lon; } }
+    await S.setJSON(nid, n); return json(publicNom(n, { yes: 0, no: 0, comments: 0 }, null));
+  }
+  const n = id ? await S.get(id, { type: "json" }) : null; if (!n) return bad("not_found", 404);
+  if (!sub && M === "GET") {
+    if (n.status === "hidden") return json({ hidden: true }, 410);
+    const t = await tally(id); await maybeAdmit(n, t);
+    const { blobs } = await store("ncomments").list({ prefix: id + "/" });
+    const comments = (await Promise.all(blobs.map(async b => { const c = await store("ncomments").get(b.key, { type: "json" }); return c && !c.hidden ? { id: b.key.split("/")[1], name: c.name, text: c.text, at: c.at } : null; })))
+      .filter(Boolean).sort((x, y) => x.at - y.at);
+    return json({ ...publicNom(n, t, await myVoteFor(id, await voterId(req))), comments });
+  }
+  if (n.status === "hidden") return bad("not_found", 404);
+  if (sub === "vote" && M === "POST") {
+    const who = await voterId(req); if (!who) return bad("no_voter", 400);
+    const v = (await body(req)).v; if (!["yes", "no", "clear"].includes(v)) return bad("bad_body");
+    const ip = await sha((context?.ip || req.headers.get("x-nf-client-connection-ip") || "") + "|" + id), lim = store("votelimits");
+    const prev = await myVoteFor(id, who);
+    if (!prev && v !== "clear") { const c = (await lim.get(ip, { type: "json" })) || { n: 0 }; if (c.n >= 6) return bad("too_many", 429); c.n++; await lim.setJSON(ip, c); }
+    const vs = store("votes"); await vs.delete(voteKey(id, "yes", who)); await vs.delete(voteKey(id, "no", who));
+    if (v !== "clear") await vs.set(voteKey(id, v, who), String(Date.now()));
+    const t = await tally(id); await maybeAdmit(n, t); return json({ ...t, myVote: v === "clear" ? null : v, status: n.status });
+  }
+  if (sub === "comments" && !cid && M === "POST") {
+    const u = await me(), v = await body(req), text = clean(v.text, 400).trim(), name = (u?.name || cleanName(v.name)).slice(0, 30);
+    if (text.length < 2 || name.length < 2) return bad("bad_body");
+    const k = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    await store("ncomments").setJSON(id + "/" + k, { name, text, at: Date.now(), by: u?.id || null, reports: 0 });
+    return json({ id: k, name, text, at: Date.now() });
+  }
+  if (sub === "comments" && cid && act === "report" && M === "POST") {
+    const cs = store("ncomments"), key = id + "/" + cid, c = await cs.get(key, { type: "json" }); if (!c) return bad("not_found", 404);
+    c.reports = (c.reports || 0) + 1; if (c.reports >= 3) c.hidden = true; await cs.setJSON(key, c); return json({ ok: true });
+  }
+  if (sub === "comments" && cid && M === "DELETE") {
+    const u = await me(); if (!u?.admin) return bad("not_yours", 403); await store("ncomments").delete(id + "/" + cid); return json({ ok: true });
+  }
+  // owner opt-out: hides immediately
+  if (sub === "remove" && M === "POST") { n.status = "hidden"; n.removedAt = Date.now(); n.removeNote = clean((await body(req)).note, 200); await S.setJSON(id, n); return json({ ok: true }); }
+  if (!sub && M === "DELETE") { const u = await me(); if (!u || (u.id !== n.by && !u.admin)) return bad("not_yours", 403); n.status = "hidden"; await S.setJSON(id, n); return json({ ok: true }); }
+  return bad("not_found", 404);
+}
