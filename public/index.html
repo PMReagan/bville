@@ -339,6 +339,30 @@ h1 .flame{width:.8em;height:.95em;flex:none;filter:drop-shadow(0 0 10px rgba(255
 .tips{padding-left:0;list-style:none;display:grid;gap:10px;margin:12px 0 18px}
 .tips li{background:var(--night);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--dust)}.tips b{color:var(--bone)}
 .qq{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--sky);color:var(--sky);font-family:var(--f-display);font-size:12px}
+/* ===== Map first ===== */
+.top{padding-block:12px 4px;gap:10px}
+.brand h1{font-size:clamp(28px,7vw,36px)}
+.rankbar{padding:8px 12px;gap:8px 12px;border-radius:12px}
+.rank{font-size:16px}.rank small{display:none}
+.tally{font-size:14px}.tally b{font-size:18px}
+.xp{height:6px}
+@media (max-width:520px){.rankbar{grid-template-columns:auto 1fr}.tally{text-align:right}}
+.tabs{margin:8px 0 10px}
+.tab{padding:8px 4px 10px}
+#p-map .mapwrap{padding:0;border-radius:16px;overflow:hidden}
+.zooms{margin:0;padding:8px 8px 6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px}
+.zooms::-webkit-scrollbar{display:none}
+.zooms .chip{flex:none;font-size:13px;padding:5px 11px}
+.legend .dot.f{background:var(--torch);border-color:#FFE3A6}
+#map{border-radius:0}
+.legend{padding:8px 12px 10px;font-size:12px}
+@media (max-width:640px){#p-map .mapwrap{margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));border-radius:0;border-inline:0}}
+#p-map .alert{margin:12px 0 0;padding:10px 14px}
+.alert details summary{list-style:none;cursor:pointer;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.alert details summary::-webkit-details-marker{display:none}
+.alert details summary::after{content:"▾";margin-left:auto;color:var(--dust);transition:transform .2s}
+.alert details[open] summary::after{transform:rotate(180deg)}
+.alert .alerthead b{font-size:16px}
 /* ===== Accounts ===== */
 .hbtns{display:flex;gap:6px}
 #acct.in{color:var(--bone);border-color:var(--jade);max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -486,12 +510,12 @@ footer p{margin:0 0 8px}
   </nav>
 
   <section id="p-map">
-    <div class="alert" id="alert" aria-live="polite"></div>
     <div class="mapwrap">
       <div class="zooms" role="group" aria-label="Map area"></div>
       <svg id="map" viewBox="0 0 400 420" role="img" aria-label="Expedition map of Birmingham with hidden sites"></svg>
-      <div class="legend"><span><i class="dot"></i>Rumored site</span><span><i class="dot f"></i>Discovered</span><span>Street lines approximate</span></div>
+      <div class="legend"><span><i class="dot"></i>Rumored site</span><span><i class="dot f"></i>Discovered</span><span>Tap a ? to read its riddle</span></div>
     </div>
+    <div class="alert" id="alert" aria-live="polite"></div>
   </section>
   <section id="p-journal" hidden>
     <div class="filters" id="filters"></div>
@@ -899,11 +923,11 @@ function drawAlert(){
   if (!live.length && !lost.length && !W.raids.length) {
     const n = W.players, pct = Math.min(100, n / WAKE_AT * 100);
     b.innerHTML = W.awake
-      ? `<div class="alerthead"><span class="siren"></span><b>The Syndicate stirs</b></div><p class="hint" style="margin-top:6px">Five explorers are in, and the developers have noticed. The first raid hits in <strong style="color:#FF8A5E">${left(W.firstStart - Date.now())}</strong>. Find sites and bank Marthas now: you’ll need them to defend the town.</p>`
-      : `<div class="alerthead"><span class="eye" aria-hidden="true"></span><b class="sleep">The Syndicate is watching</b></div>
-        <p class="hint" style="margin-top:6px">A shadowy band of developers is eyeing bVille’s historic sites. They’ll make their move once <strong>${WAKE_AT} explorers</strong> are in the game. Recruit friends, find sites and stock up on Marthas before they strike.</p>
-        <div class="bar big" style="margin-top:8px"><i style="width:${pct}%;background:linear-gradient(90deg,var(--orchid),var(--ember))"></i></div><div class="hint">${n} of ${WAKE_AT} explorers have joined</div>
-        <p class="hint" style="margin-top:8px">They’ve struck before, for real: the Cinderella Patch House (1994), 648 S. Bates (1996) and 315–325 W. Brown (1990).</p>`;
+      ? `<details><summary class="alerthead"><span class="siren"></span><b>The Syndicate stirs</b><span class="hint">First raid in ${left(W.firstStart - Date.now())}</span></summary><p class="hint" style="margin-top:6px">Five explorers are in, and the developers have noticed. Find sites and bank Marthas now: you’ll need them to defend the town.</p></details>`
+      : `<details><summary class="alerthead"><span class="eye" aria-hidden="true"></span><b class="sleep">The Syndicate is watching</b><span class="hint">${n} of ${WAKE_AT} explorers</span></summary>
+        <p class="hint" style="margin-top:8px">A shadowy band of developers is eyeing bVille’s historic sites. They’ll make their move once <strong>${WAKE_AT} explorers</strong> are in the game. Recruit friends, find sites and stock up on Marthas before they strike.</p>
+        <div class="bar big" style="margin-top:8px"><i style="width:${pct}%;background:linear-gradient(90deg,var(--orchid),var(--ember))"></i></div>
+        <p class="hint" style="margin-top:8px">They’ve struck before, for real: the Cinderella Patch House (1994), 648 S. Bates (1996) and 315–325 W. Brown (1990).</p></details>`;
     b.classList.toggle("dormant", !W.awake); return;
   }
   b.classList.remove("dormant");
